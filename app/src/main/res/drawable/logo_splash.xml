@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    
+    <!-- Orange M/Arrow shape logo -->
+    <path
+        android:fillColor="#FF6B35"
+        android:pathData="M30,90 L30,40 L45,55 L60,30 L75,55 L90,40 L90,90 L80,90 L80,60 L70,70 L60,50 L50,70 L40,60 L40,90 Z" />
+    
+    <!-- Accent shape for dynamic look -->
+    <path
+        android:fillColor="#FF8C5A"
+        android:pathData="M60,25 L65,30 L60,35 L55,30 Z" />
+</vector>
+
