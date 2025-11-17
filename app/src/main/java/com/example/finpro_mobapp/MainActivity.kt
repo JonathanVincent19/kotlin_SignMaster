@@ -131,7 +131,8 @@ fun AppNavigation() {
                 onMenuClick = { scope.launch { drawerState.open() } }
             )
             Screen.QUIZ -> QuizScreen(
-                onMenuClick = { scope.launch { drawerState.open() } }
+                onMenuClick = { scope.launch { drawerState.open() } },
+                onBackToHome = { currentScreen = Screen.HOME }
             )
         }
     }

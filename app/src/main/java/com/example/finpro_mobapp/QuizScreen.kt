@@ -1,66 +1,45 @@
 package com.example.finpro_mobapp
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.example.finpro_mobapp.quiz.*
 
-@OptIn(ExperimentalMaterial3Api::class)
+enum class QuizScreenState {
+    QUIZ_SELECTION,
+    QUIZ_1,
+    QUIZ_2
+}
+
 @Composable
 fun QuizScreen(
-    onMenuClick: () -> Unit
+    onMenuClick: () -> Unit,
+    onBackToHome: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "Latihan",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+    var screenState by remember { mutableStateOf(QuizScreenState.QUIZ_SELECTION) }
+    
+    when (screenState) {
+        QuizScreenState.QUIZ_SELECTION -> {
+            QuizSelectionScreen(
+                onMenuClick = onMenuClick,
+                onQuiz1Click = {
+                    screenState = QuizScreenState.QUIZ_1
                 },
-                navigationIcon = {
-                    IconButton(onClick = onMenuClick) {
-                        Icon(
-                            imageVector = Icons.Default.Menu,
-                            contentDescription = "Menu",
-                            tint = Color.White
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF4A90E2)
-                )
+                onQuiz2Click = {
+                    // Quiz 2 coming soon
+                }
             )
-            
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Fitur Quiz/Latihan\n(Coming Soon)",
-                    fontSize = 20.sp,
-                    textAlign = TextAlign.Center,
-                    color = Color.Gray
-                )
-            }
+        }
+        
+        QuizScreenState.QUIZ_1 -> {
+            Quiz1Container(
+                onBackToQuizSelection = {
+                    screenState = QuizScreenState.QUIZ_SELECTION
+                },
+                onBackToHome = onBackToHome
+            )
+        }
+        
+        QuizScreenState.QUIZ_2 -> {
+            // Coming soon
         }
     }
 }

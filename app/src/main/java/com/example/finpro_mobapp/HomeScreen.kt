@@ -213,9 +213,9 @@ fun HeroBanner(onNavigateToDictionary: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(180.dp),
+            .height(210.dp),
         shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Box(
             modifier = Modifier
@@ -235,56 +235,74 @@ fun HeroBanner(onNavigateToDictionary: () -> Unit) {
                 contentDescription = "Banner background",
                 modifier = Modifier
                     .fillMaxSize()
-                    .alpha(0.2f),
+                    .alpha(0.15f),
                 contentScale = ContentScale.Crop
             )
             
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.Center,
+                    .padding(32.dp),
+                verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.Start
             ) {
-                Text(
-                    text = "🎯 Ayo Mulai",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color.White.copy(alpha = 0.9f)
-                )
+                // Text Section
+                Column {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "🎯",
+                            fontSize = 28.sp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Ayo Mulai",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.White.copy(alpha = 0.95f)
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Text(
+                        text = "Petualangan\nBelajarmu!",
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White,
+                        lineHeight = 38.sp,
+                        letterSpacing = 0.5.sp
+                    )
+                }
                 
-                Spacer(modifier = Modifier.height(4.dp))
-                
-                Text(
-                    text = "Petualangan\nBelajarmu!",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    lineHeight = 30.sp
-                )
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
+                // Button Section
                 Button(
                     onClick = onNavigateToDictionary,
+                    modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.White
                     ),
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp)
+                    shape = RoundedCornerShape(14.dp),
+                    contentPadding = PaddingValues(vertical = 16.dp),
+                    elevation = ButtonDefaults.buttonElevation(
+                        defaultElevation = 4.dp,
+                        pressedElevation = 8.dp
+                    )
                 ) {
                     Text(
                         text = "Mulai Belajar",
                         color = Color(0xFF4A90E2),
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 15.sp
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
                     Icon(
                         imageVector = Icons.Default.ArrowForward,
                         contentDescription = "Arrow",
                         tint = Color(0xFF4A90E2),
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
