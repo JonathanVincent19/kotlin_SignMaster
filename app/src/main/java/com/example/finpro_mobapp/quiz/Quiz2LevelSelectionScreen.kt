@@ -22,9 +22,9 @@ fun Quiz2LevelSelectionScreen(
     onLevelClick: (Int) -> Unit
 ) {
     val levels = listOf(
-        LevelInfo(1, "🟢", "Level 1", "Peragakan 1 Huruf", "10 soal huruf A-J"),
-        LevelInfo(2, "🟡", "Level 2", "Peragakan 1 Kata", "8 soal kata sederhana"),
-        LevelInfo(3, "🔴", "Level 3", "Peragakan 2 Kata", "6 soal kalimat pendek")
+        LevelInfo(1, "🟢", "Level 1", "Peragakan 1 Huruf", "20 soal huruf A-Z"),
+        LevelInfo(2, "🟡", "Level 2", "Peragakan 1 Kata", "15 soal kata (5-7 huruf)"),
+        LevelInfo(3, "🔴", "Level 3", "Peragakan 2 Kata", "12 soal kalimat (2 kata)")
     )
     
     Scaffold(

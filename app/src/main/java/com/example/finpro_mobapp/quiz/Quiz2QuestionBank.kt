@@ -6,21 +6,57 @@ package com.example.finpro_mobapp.quiz
  */
 object Quiz2QuestionBank {
     
-    // Level 1: Peragakan 1 Huruf (10 soal)
-    val level1_letters: List<String> = listOf(
-        "A", "B", "C", "D", "E", "F", "G", "H", "I", "J"
-    )
+    // Level 1: Peragakan 1 Huruf (20 soal)
+    val level1_letters: List<String> = ('A'..'Z').map { it.toString() }.shuffled().take(20)
     
-    // Level 2: Peragakan 1 Kata (2 soal)
+    // Level 2: Peragakan 1 Kata (15 soal - 5-7 huruf yang agak susah)
     val level2_words: List<String> = listOf(
-        "SAYA",
-        "NAMA"
-    )
+        "BELAJAR",   // 7 huruf
+        "KELUARGA",  // 7 huruf
+        "MENGAJAR",  // 7 huruf
+        "BERMAIN",   // 7 huruf
+        "MAKANAN",   // 7 huruf
+        "MINUMAN",   // 7 huruf
+        "SEKOLAH",   // 7 huruf
+        "LAPANGAN",  // 7 huruf
+        "PINTU",     // 5 huruf
+        "KAMAR",     // 5 huruf
+        "PENSIL",    // 6 huruf
+        "KUNING",    // 6 huruf
+        "HIJAU",     // 5 huruf
+        "MERAH",     // 5 huruf
+        "BESAR",      // 5 huruf
+        "QURBAN",
+        "VAKSIN",
+        "WANITA",
+        "XENON",
+        "EXIT",
+        "ZEBRA"
+    ).map { it.toString() }.shuffled().take(15)
     
-    // Level 3: Peragakan 2 Kata (1 soal - kalimat pendek)
+    // Level 3: Peragakan 2 Kata (12 soal - kalimat yang lebih susah)
     val level3_phrases: List<String> = listOf(
-        "NAMA SAYA"
-    )
+        "SELAMAT PAGI",
+        "SELAMAT SIANG",
+        "SELAMAT MALAM",
+        "TERIMA KASIH",
+        "SAMA SAMA",
+        "KEMBALI LAGI",
+        "HARI INI",
+        "BESOK LAGI",
+        "SENANG SEKALI",
+        "MAKASIH BANYAK",
+        "SAYA SUKA",
+        "KAMU BAIK",
+        "QUOTA KELAS",
+        "VIDEO VIRAL",
+        "WARNA BARU",
+        "WAKTU BELAJAR",
+        "ZAT BESI",
+        "ZONA HUJAN",
+        "BOX KECIL",
+        "EXTRA PEDAS"
+    ).map { it.toString() }.shuffled().take(12)
     
     /**
      * Get questions untuk level tertentu

@@ -139,7 +139,7 @@ fun HomeScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 24.dp)
+                    .padding(bottom = 18.dp)
             ) {
                 Text(
                     text = "👋 Hai Jojo!",
@@ -147,14 +147,15 @@ fun HomeScreen(
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF2C3E50)
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "Sudah belajar hari ini?",
-                    fontSize = 16.sp,
+                    text = " Sudah belajar hari ini?",
+
+                    fontSize = 22.sp,
                     color = Color(0xFF7F8C8D)
                 )
             }
-            
+            Spacer(modifier = Modifier.height(2.dp))
             // Main Banner
             HeroBanner(onNavigateToDictionary = onNavigateToDictionary)
             

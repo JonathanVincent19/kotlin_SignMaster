@@ -359,13 +359,43 @@ private fun ShowingTargetScreen(
                     .padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = question.targetGesture,
-                    fontSize = 48.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    textAlign = TextAlign.Center
-                )
+                // Flexible layout: coba horizontal dulu dengan font lebih kecil jika perlu
+                // Jika benar-benar panjang baru wrap ke atas-bawah
+                val textLength = question.targetGesture.length
+                val hasSpace = question.targetGesture.contains(" ")
+                
+                if (hasSpace && textLength > 12) {
+                    // Hanya jika benar-benar panjang (>12 karakter) baru split atas-bawah
+                    val words = question.targetGesture.split(" ", limit = 2)
+                    words.forEachIndexed { index, word ->
+                        if (index > 0) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
+                        Text(
+                            text = word,
+                            fontSize = if (word.length > 6) 32.sp else 38.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                } else {
+                    // Horizontal layout dengan font size dinamis - lebih kecil jika panjang
+                    val dynamicFontSize = when {
+                        textLength > 10 -> 30.sp  // Sangat panjang (11+ huruf): font lebih kecil untuk muat horizontal
+                        textLength > 8 -> 34.sp   // Panjang (9-10 huruf): font sedang-kecil
+                        textLength > 6 -> 40.sp   // Sedang (7-8 huruf): font sedang (misalnya "HARI INI")
+                        textLength > 5 -> 42.sp   // Sedang (6 huruf)
+                        else -> 48.sp             // Pendek (≤5 huruf): font besar
+                    }
+                    Text(
+                        text = question.targetGesture,
+                        fontSize = dynamicFontSize,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        textAlign = TextAlign.Center
+                    )
+                }
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 
@@ -691,80 +721,244 @@ private fun RecordingScreenLetterByLetter(
                     )
                     
                     Text(
-                        text = "Peragakan gerakan Bisindo:",
+                        text = "Peragakan dengan gerakan:",
                         fontSize = 14.sp,
                         color = Color(0xFF5D6D7E),
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
                     
                     // Display huruf per huruf dengan design hijau untuk yang sudah benar
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        targetWord.forEachIndexed { index, letter ->
-                            val isCompleted = index < completedLetters
-                            val isCurrent = index == completedLetters
-                            val isSpace = letter == ' '
-                            
-                            // Untuk spasi, tampilkan sebagai kotak kosong yang lebih kecil
-                            if (isSpace) {
-                                Box(
-                                    modifier = Modifier
-                                        .padding(horizontal = 2.dp)
-                                        .width(20.dp)
-                                        .height(50.dp),
-                                    contentAlignment = Alignment.Center
+                    // Flexible layout: 1 kata per baris jika multi-word, font fleksibel
+                    val hasSpaces = targetWord.contains(" ")
+                    val words = if (hasSpaces) targetWord.split(" ") else listOf(targetWord)
+                    val longestWordLength = words.maxOfOrNull { it.length } ?: targetWord.length
+                    val totalLength = targetWord.length
+                    
+                    // Ukuran dinamis - lebih kecil dan lebih fleksibel
+                    val letterBoxSize = when {
+                        totalLength > 14 -> 32.dp  // Sangat panjang (14+ huruf): box sangat kecil
+                        totalLength > 12 -> 35.dp  // Panjang (13-14 huruf): box kecil
+                        totalLength > 10 -> 38.dp  // Sedang-panjang (11-12 huruf): box sedang-kecil
+                        totalLength > 8 -> 40.dp   // Sedang (9-10 huruf): box kecil-sedang (misalnya "SAMA SAMA")
+                        totalLength > 6 -> 42.dp   // Sedang (7-8 huruf): box sedang
+                        totalLength > 5 -> 45.dp   // Sedang (6 huruf)
+                        else -> 48.dp              // Pendek (≤5 huruf): box normal
+                    }
+                    val letterFontSize = when {
+                        totalLength > 14 -> 18.sp  // Sangat panjang: font sangat kecil
+                        totalLength > 12 -> 20.sp  // Panjang: font kecil
+                        totalLength > 10 -> 22.sp  // Sedang-panjang: font kecil-sedang
+                        totalLength > 8 -> 24.sp   // Sedang (9-10 huruf): font sedang-kecil (misalnya "SAMA SAMA")
+                        totalLength > 6 -> 26.sp   // Sedang (7-8 huruf): font sedang
+                        totalLength > 5 -> 28.sp   // Sedang (6 huruf)
+                        else -> 30.sp              // Pendek (≤5 huruf): font normal
+                    }
+                    val letterPadding = when {
+                        totalLength > 14 -> 1.dp   // Sangat panjang: padding minimal
+                        totalLength > 12 -> 1.dp   // Panjang: padding minimal
+                        totalLength > 10 -> 2.dp   // Sedang-panjang: padding kecil
+                        totalLength > 8 -> 2.dp    // Sedang (9-10 huruf): padding kecil
+                        totalLength > 6 -> 3.dp    // Sedang (7-8 huruf): padding sedang
+                        else -> 3.dp               // Pendek: padding sedang
+                    }
+                    
+                    // Untuk multi-word: 1 kata per baris (lebih menarik)
+                    // Untuk single-word: horizontal jika muat, wrap jika sangat panjang
+                    val shouldWrapPerWord = hasSpaces && words.size > 1
+                    val shouldWrapLongWord = !hasSpaces && totalLength > 10
+                    
+                    if (shouldWrapPerWord) {
+                        // Multi-line layout: 1 kata per baris (untuk "MAKASIH BANYAK" dll)
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            var currentIndex = 0
+                            words.forEachIndexed { wordIndex, word ->
+                                if (wordIndex > 0) {
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                }
+                                
+                                Row(
+                                    modifier = Modifier.padding(vertical = 2.dp),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    // Spasi ditampilkan sebagai garis vertikal
+                                    word.forEachIndexed { letterIndexInWord, letter ->
+                                        val index = currentIndex + letterIndexInWord
+                                        val isCompleted = index < completedLetters
+                                        val isCurrent = index == completedLetters
+                                        
+                                        Box(
+                                            modifier = Modifier
+                                                .padding(horizontal = letterPadding)
+                                                .width(letterBoxSize)
+                                                .height(letterBoxSize)
+                                                .background(
+                                                    color = when {
+                                                        isCompleted -> Color(0xFF27AE60)
+                                                        isCurrent -> Color(0xFF3498DB)
+                                                        else -> Color(0xFFECF0F1)
+                                                    },
+                                                    shape = RoundedCornerShape(8.dp)
+                                                )
+                                                .border(
+                                                    width = if (isCurrent) 2.dp else 0.dp,
+                                                    color = Color(0xFFE74C3C),
+                                                    shape = RoundedCornerShape(8.dp)
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = letter.toString(),
+                                                fontSize = letterFontSize,
+                                                fontWeight = FontWeight.Bold,
+                                                color = when {
+                                                    isCompleted -> Color.White
+                                                    isCurrent -> Color.White
+                                                    else -> Color(0xFF95A5A6)
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                                
+                                currentIndex += word.length + 1 // +1 for space
+                            }
+                        }
+                    } else if (shouldWrapLongWord) {
+                        // Wrap untuk single word yang sangat panjang (>10 huruf)
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            // Baris pertama: maksimal 6 huruf per baris
+                            var currentRowIndex = 0
+                            while (currentRowIndex < targetWord.length) {
+                                val endIndex = minOf(currentRowIndex + 6, targetWord.length)
+                                val rowLetters = targetWord.substring(currentRowIndex until endIndex)
+                                
+                                Row(
+                                    modifier = Modifier.padding(vertical = 4.dp),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    rowLetters.forEachIndexed { rowIdx, letter ->
+                                        val index = currentRowIndex + rowIdx
+                                        val isCompleted = index < completedLetters
+                                        val isCurrent = index == completedLetters
+                                        
+                                        Box(
+                                            modifier = Modifier
+                                                .padding(horizontal = letterPadding)
+                                                .width(letterBoxSize)
+                                                .height(letterBoxSize)
+                                                .background(
+                                                    color = when {
+                                                        isCompleted -> Color(0xFF27AE60)
+                                                        isCurrent -> Color(0xFF3498DB)
+                                                        else -> Color(0xFFECF0F1)
+                                                    },
+                                                    shape = RoundedCornerShape(8.dp)
+                                                )
+                                                .border(
+                                                    width = if (isCurrent) 2.dp else 0.dp,
+                                                    color = Color(0xFFE74C3C),
+                                                    shape = RoundedCornerShape(8.dp)
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = letter.toString(),
+                                                fontSize = letterFontSize,
+                                                fontWeight = FontWeight.Bold,
+                                                color = when {
+                                                    isCompleted -> Color.White
+                                                    isCurrent -> Color.White
+                                                    else -> Color(0xFF95A5A6)
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                                
+                                currentRowIndex = endIndex
+                            }
+                        }
+                    } else {
+                        // Single-line layout untuk kata normal
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            targetWord.forEachIndexed { index, letter ->
+                                val isCompleted = index < completedLetters
+                                val isCurrent = index == completedLetters
+                                val isSpace = letter == ' '
+                                
+                                // Untuk spasi, tampilkan sebagai kotak kosong yang lebih kecil
+                                if (isSpace) {
                                     Box(
                                         modifier = Modifier
-                                            .width(2.dp)
-                                            .height(30.dp)
+                                            .padding(horizontal = 2.dp)
+                                            .width(20.dp)
+                                            .height(letterBoxSize),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        // Spasi ditampilkan sebagai garis vertikal
+                                        Box(
+                                            modifier = Modifier
+                                                .width(2.dp)
+                                                        .height(letterBoxSize * 0.6f)
+                                                .background(
+                                                    color = when {
+                                                        isCompleted -> Color(0xFF27AE60)
+                                                        isCurrent -> Color(0xFF3498DB)
+                                                        else -> Color(0xFFBDC3C7)
+                                                    },
+                                                    shape = RoundedCornerShape(1.dp)
+                                                )
+                                        )
+                                    }
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .padding(horizontal = letterPadding)
+                                            .width(letterBoxSize)
+                                            .height(letterBoxSize)
                                             .background(
                                                 color = when {
-                                                    isCompleted -> Color(0xFF27AE60)
-                                                    isCurrent -> Color(0xFF3498DB)
-                                                    else -> Color(0xFFBDC3C7)
+                                                    isCompleted -> Color(0xFF27AE60) // Hijau untuk huruf yang sudah benar
+                                                    isCurrent -> Color(0xFF3498DB) // Biru untuk huruf yang sedang ditargetkan
+                                                    else -> Color(0xFFECF0F1) // Abu-abu untuk huruf yang belum
                                                 },
-                                                shape = RoundedCornerShape(1.dp)
+                                                shape = RoundedCornerShape(8.dp)
                                             )
-                                    )
-                                }
-                            } else {
-                                Box(
-                                    modifier = Modifier
-                                        .padding(horizontal = 4.dp)
-                                        .width(50.dp)
-                                        .height(50.dp)
-                                        .background(
+                                            .border(
+                                                width = if (isCurrent) 2.dp else 0.dp,
+                                                color = Color(0xFFE74C3C),
+                                                shape = RoundedCornerShape(8.dp)
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = letter.toString(),
+                                            fontSize = letterFontSize,
+                                            fontWeight = FontWeight.Bold,
                                             color = when {
-                                                isCompleted -> Color(0xFF27AE60) // Hijau untuk huruf yang sudah benar
-                                                isCurrent -> Color(0xFF3498DB) // Biru untuk huruf yang sedang ditargetkan
-                                                else -> Color(0xFFECF0F1) // Abu-abu untuk huruf yang belum
-                                            },
-                                            shape = RoundedCornerShape(8.dp)
+                                                isCompleted -> Color.White
+                                                isCurrent -> Color.White
+                                                else -> Color(0xFF95A5A6)
+                                            }
                                         )
-                                        .border(
-                                            width = if (isCurrent) 2.dp else 0.dp,
-                                            color = Color(0xFFE74C3C),
-                                            shape = RoundedCornerShape(8.dp)
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = letter.toString(),
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.Bold,
-                                        color = when {
-                                            isCompleted -> Color.White
-                                            isCurrent -> Color.White
-                                            else -> Color(0xFF95A5A6)
-                                        }
-                                    )
+                                    }
                                 }
                             }
                         }
@@ -810,7 +1004,7 @@ private fun RecordingScreenLetterByLetter(
             SuccessAnimationOverlay(
                 onAnimationComplete = {
                     // Trigger completion setelah animasi selesai
-                    delay(500)
+                            delay(500)
                     onComplete(
                         RecognitionResult(
                             gesture = targetWord,
@@ -1230,7 +1424,7 @@ private fun FeedbackCorrectScreen(
         
         // Success text dengan animasi
         Text(
-            text = "✅ YEYY KAMU BENAR!",
+            text = "YEYY KAMU BENAR!",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF27AE60),
@@ -1325,7 +1519,7 @@ private fun SuccessAnimationOverlay(
             
             // Success text dengan animasi
             Text(
-                text = "✅ YEYY KAMU BENAR!",
+                text = "YEYY KAMU BENAR!",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,

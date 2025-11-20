@@ -11,7 +11,7 @@ object QuestionBank {
     // 1.1 Lambat - 10 soal, huruf A-J
     val level1_1: List<String> = listOf(
         "A", "B", "C", "D", "E", "F", "G", "H", "I", "J"
-    )
+    ).map { it.toString() }.shuffled()
     
     // 1.2 Sedang - 12 soal, huruf A-P (random)
     val level1_2: List<String> = listOf(
@@ -32,8 +32,13 @@ object QuestionBank {
         "KAKI",  // 4 huruf
         "MATA",  // 4 huruf
         "TOPI",  // 4 huruf
-        "BAJU"   // 4 huruf
-    )
+        "BAJU",  // 4 huruf
+        "YOGA",
+        "YANG",
+        "ZINK",
+        "WAJA",
+        "VENA"
+    ).map { it.toString() }.shuffled().take(8)
     
     // 2.2 Sedang - 10 soal, kata 4-5 huruf
     val level2_2: List<String> = listOf(
@@ -46,8 +51,14 @@ object QuestionBank {
         "BESAR",  // 5 huruf
         "KECIL",  // 5 huruf
         "MALAM",  // 5 huruf
-        "SIANG"   // 5 huruf
-    )
+        "SIANG",   // 5 huruf
+        "QUOTA",
+        "VIRUS",
+        "WAKTU",
+        "XENON",
+        "YOGYA",
+        "ZEBRA"
+    ).map { it.toString() }.shuffled().take(10)
     
     // 2.3 Cepat - 12 soal, kata 5-6 huruf
     val level2_3: List<String> = listOf(
@@ -62,8 +73,14 @@ object QuestionBank {
         "PULANG",  // 6 huruf
         "TENANG",  // 6 huruf
         "MARAH",   // 5 huruf
-        "SAYANG"   // 6 huruf
-    )
+        "SAYANG",   // 6 huruf
+        "VAKSIN",
+        "WANITA",
+        "QURBAN",
+        "YAYANG",
+        "ZAHRAH",
+        "XYLOPH"
+    ).map { it.toString() }.shuffled().take(12)
     
     // ========== LEVEL 3: TEBAK 2 KATA ==========
     
@@ -74,8 +91,12 @@ object QuestionBank {
         "BUKU INI",      // 4+3 = 7 huruf
         "AKU MAKAN",     // 3+5 = 8 huruf
         "TEMAN BAIK",    // 5+4 = 9 huruf
-        "RUMAH BESAR"    // 5+5 = 10 huruf
-    )
+        "RUMAH BESAR",    // 5+5 = 10 huruf
+        "WAKTU PAGI",
+        "ZONA AMAN",
+        "YOGA PAGI",
+        "VIDEO MINI"
+    ).map { it.toString() }.shuffled().take(6)
     
     // 3.2 Sedang - 8 soal, 2 kata sedang
     val level3_2: List<String> = listOf(
@@ -86,8 +107,13 @@ object QuestionBank {
         "MAKAN SIANG",    // 5+5 = 10 huruf
         "KERJA KERAS",    // 5+5 = 10 huruf
         "BANGUN PAGI",    // 6+4 = 10 huruf
-        "TIDUR MALAM"     // 5+5 = 10 huruf
-    )
+        "TIDUR MALAM",     // 5+5 = 10 huruf
+        "WAKTU MALAM",
+        "ZEBRA LARI",
+        "VIRUS BARU",
+        "YOGYA RAMAI",
+        "QUOTA KELAS"
+    ).map { it.toString() }.shuffled().take(8)
     
     // 3.3 Cepat - 10 soal, 2 kata panjang
     val level3_3: List<String> = listOf(
@@ -100,8 +126,13 @@ object QuestionBank {
         "SEMANGAT BELAJAR",   // 8+7 = 15 huruf
         "GEMBIRA SELALU",     // 7+6 = 13 huruf
         "DATANG BERSAMA",     // 6+7 = 13 huruf
-        "PULANG SENANG"       // 6+6 = 12 huruf
-    )
+        "PULANG SENANG",       // 6+6 = 12 huruf
+        "VAKSIN NASIONAL",
+        "WANITA CERDAS",
+        "ZONA BAHAGIA",
+        "YOUTH TALENTA",
+        "QURBAN HEWAN"
+    ).map { it.toString() }.shuffled().take(10)
     
     /**
      * Get questions for specific sub-level
