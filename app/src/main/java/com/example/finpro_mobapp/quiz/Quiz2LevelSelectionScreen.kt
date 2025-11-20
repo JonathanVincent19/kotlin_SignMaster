@@ -5,7 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,27 +17,32 @@ import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun QuizSelectionScreen(
-    onMenuClick: () -> Unit,
-    onQuiz1Click: () -> Unit,
-    onQuiz2Click: () -> Unit
+fun Quiz2LevelSelectionScreen(
+    onBackClick: () -> Unit,
+    onLevelClick: (Int) -> Unit
 ) {
+    val levels = listOf(
+        LevelInfo(1, "🟢", "Level 1", "Peragakan 1 Huruf", "10 soal huruf A-J"),
+        LevelInfo(2, "🟡", "Level 2", "Peragakan 1 Kata", "8 soal kata sederhana"),
+        LevelInfo(3, "🔴", "Level 3", "Peragakan 2 Kata", "6 soal kalimat pendek")
+    )
+    
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        "Latihan",
+                        "Quiz 2: Peragakan Isyarat",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onMenuClick) {
+                    IconButton(onClick = onBackClick) {
                         Icon(
-                            imageVector = Icons.Default.Menu,
-                            contentDescription = "Menu",
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back",
                             tint = Color.White
                         )
                     }
@@ -56,126 +61,94 @@ fun QuizSelectionScreen(
                 .padding(20.dp)
         ) {
             Text(
-                text = "Pilih Jenis Quiz",
+                text = "Pilih Level",
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF2C3E50),
                 modifier = Modifier.padding(bottom = 24.dp)
             )
             
-            // Quiz 1 Card
-            QuizCard(
-                emoji = "📷",
-                title = "Quiz 1",
-                subtitle = "Tebak Huruf dari Gambar",
-                features = listOf(
-                    "Multiple levels",
-                    "Tingkatkan kecepatanmu!"
-                ),
-                onClick = onQuiz1Click
-            )
-            
-            Spacer(modifier = Modifier.height(20.dp))
-            
-            // Quiz 2 Card
-            QuizCard(
-                emoji = "🎥",
-                title = "Quiz 2",
-                subtitle = "Peragakan Isyarat (Camera)",
-                features = listOf(
-                    "AI Recognition",
-                    "Latih gerakanmu!"
-                ),
-                onClick = onQuiz2Click,
-                enabled = true // Now enabled!
-            )
+            levels.forEach { level ->
+                LevelCard(
+                    level = level,
+                    onClick = { onLevelClick(level.number) }
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
         }
     }
 }
 
+private data class LevelInfo(
+    val number: Int,
+    val icon: String,
+    val title: String,
+    val subtitle: String,
+    val description: String
+)
+
 @Composable
-private fun QuizCard(
-    emoji: String,
-    title: String,
-    subtitle: String,
-    features: List<String>,
-    onClick: () -> Unit,
-    enabled: Boolean = true
+private fun LevelCard(
+    level: LevelInfo,
+    onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (enabled) Color.White else Color(0xFFF5F5F5)
+            containerColor = Color.White
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp)
+                .padding(20.dp)
         ) {
-            // Header
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(bottom = 12.dp)
             ) {
                 Text(
-                    text = emoji,
+                    text = level.icon,
                     fontSize = 32.sp,
                     modifier = Modifier.padding(end = 12.dp)
                 )
                 Column {
                     Text(
-                        text = title,
-                        fontSize = 20.sp,
+                        text = level.title,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF2C3E50)
                     )
                     Text(
-                        text = subtitle,
+                        text = level.subtitle,
                         fontSize = 14.sp,
                         color = Color(0xFF7F8C8D)
                     )
                 }
             }
             
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             
-            // Features
-            features.forEach { feature ->
-                Row(
-                    modifier = Modifier.padding(vertical = 4.dp)
-                ) {
-                    Text(
-                        text = "• ",
-                        color = Color(0xFF4A90E2),
-                        fontSize = 14.sp
-                    )
-                    Text(
-                        text = feature,
-                        fontSize = 14.sp,
-                        color = Color(0xFF5D6D7E)
-                    )
-                }
-            }
+            Text(
+                text = level.description,
+                fontSize = 14.sp,
+                color = Color(0xFF5D6D7E),
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
             
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Button
             Button(
                 onClick = onClick,
-                enabled = enabled,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF4A90E2),
-                    disabledContainerColor = Color(0xFFBDC3C7)
+                    containerColor = Color(0xFF4A90E2)
                 ),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
-                    text = if (enabled) "Mulai Quiz" else "Coming Soon",
-                    fontSize = 16.sp,
+                    text = "Mulai",
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(vertical = 4.dp)
                 )

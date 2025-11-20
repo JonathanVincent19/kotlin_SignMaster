@@ -24,7 +24,7 @@ fun QuizScreen(
                     screenState = QuizScreenState.QUIZ_1
                 },
                 onQuiz2Click = {
-                    // Quiz 2 coming soon
+                    screenState = QuizScreenState.QUIZ_2
                 }
             )
         }
@@ -39,7 +39,12 @@ fun QuizScreen(
         }
         
         QuizScreenState.QUIZ_2 -> {
-            // Coming soon
+            Quiz2Container(
+                onBackToQuizSelection = {
+                    screenState = QuizScreenState.QUIZ_SELECTION
+                },
+                onBackToHome = onBackToHome
+            )
         }
     }
 }
