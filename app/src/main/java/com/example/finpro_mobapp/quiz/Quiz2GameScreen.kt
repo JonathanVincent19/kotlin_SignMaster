@@ -4,14 +4,17 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.camera.core.ImageProxy
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -36,6 +39,14 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import java.util.concurrent.Executors
+import androidx.compose.animation.core.*
+import androidx.compose.animation.*
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.rotate
+import androidx.compose.foundation.layout.offset
 
 /**
  * AI Model Recognition Interface
@@ -86,7 +97,7 @@ fun Quiz2GameScreen(
     questions: List<Quiz2Question>,
     onComplete: (Int) -> Unit,
     onExit: () -> Unit,
-    recognitionModel: GestureRecognitionModel = PlaceholderGestureRecognitionModel()
+                recognitionModel: GestureRecognitionModel? = null
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -173,24 +184,33 @@ fun Quiz2GameScreen(
                 
                 Quiz2GameState.RECORDING -> {
                     if (cameraPermissions.allPermissionsGranted) {
+                        // Use RealGestureRecognitionModel if not provided
+                        val model = recognitionModel ?: remember {
+                            RealGestureRecognitionModel(context, isFrontCamera = true)
+                        }
+                        
                         RecordingScreen(
                             question = currentQuestion!!,
                             context = context,
                             lifecycleOwner = lifecycleOwner,
-                            recognitionModel = recognitionModel,
+                            recognitionModel = model,
                             onGestureRecognized = { result ->
                                 recognizedGesture = result.gesture
                                 confidence = result.confidence
                                 gameState = Quiz2GameState.PROCESSING
                                 
-                                // Check if correct
-                                val isCorrect = result.gesture.uppercase() == 
-                                    currentQuestion.targetGesture.uppercase()
+                                // Backend validation menggunakan GestureValidator
+                                val validationResult = GestureValidator.validate(
+                                    recognizedGesture = result.gesture,
+                                    targetGesture = currentQuestion.targetGesture,
+                                    confidence = result.confidence,
+                                    questionType = currentQuestion.type
+                                )
                                 
                                 scope.launch {
-                                    delay(1000) // Show processing
+                                    delay(1500) // Show processing dengan animasi
                                     
-                                    if (isCorrect) {
+                                    if (validationResult.isCorrect) {
                                         userAnswers.add(
                                             Quiz2Answer(
                                                 questionId = currentQuestion.id,
@@ -352,14 +372,24 @@ private fun RecordingScreen(
     recognitionModel: GestureRecognitionModel,
     onGestureRecognized: (RecognitionResult) -> Unit
 ) {
-    var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
-    var isCapturing by remember { mutableStateOf(false) }
+    var isProcessing by remember { mutableStateOf(false) }
+    var detectedGesture by remember { mutableStateOf<String?>(null) }
+    var detectionConfidence by remember { mutableStateOf(0f) }
+    var lastProcessTime by remember { mutableStateOf(0L) }
+    
     val scope = rememberCoroutineScope()
+    val cameraExecutor = remember { java.util.concurrent.Executors.newSingleThreadExecutor() }
+    
+    DisposableEffect(Unit) {
+        onDispose {
+            cameraExecutor.shutdown()
+        }
+    }
     
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Camera Preview
+        // Camera Preview (Full Screen)
         AndroidView(
             factory = { ctx ->
                 val previewView = PreviewView(ctx)
@@ -372,9 +402,86 @@ private fun RecordingScreen(
                         it.setSurfaceProvider(previewView.surfaceProvider)
                     }
                     
-                    imageCapture = ImageCapture.Builder()
-                        .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                    // ImageAnalysis untuk real-time detection (tanpa capture button)
+                    val imageAnalysis = ImageAnalysis.Builder()
+                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                        .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
                         .build()
+                        .also {
+                            it.setAnalyzer(cameraExecutor) { imageProxy ->
+                                // Throttle: Process setiap 500ms untuk efisiensi (jangan terlalu cepat)
+                                val currentTime = System.currentTimeMillis()
+                                if (!isProcessing && (currentTime - lastProcessTime) > 500) {
+                                    isProcessing = true
+                                    lastProcessTime = currentTime
+                                    
+                                    scope.launch {
+                                        try {
+                                            // Real-time recognition dengan timeout lebih pendek
+                                            // Timeout lebih lama (5 detik) karena MediaPipe LIVE_STREAM butuh waktu untuk callback
+                                            val result = withTimeoutOrNull(5000) {
+                                                recognitionModel.recognizeGesture(imageProxy)
+                                            } ?: run {
+                                                // Timeout: reset state
+                                                android.util.Log.d("RecordingScreen", "⏱️ Timeout - no response from model")
+                                                detectedGesture = null
+                                                detectionConfidence = 0f
+                                                isProcessing = false
+                                                return@launch
+                                            }
+                                            
+                                            // Hanya update UI jika ada gesture yang terdeteksi dengan confidence minimal
+                                            // Threshold 0.2f (20%) untuk menghindari false positive
+                                            if (result.gesture.isNotEmpty() && result.confidence >= 0.2f) {
+                                                android.util.Log.d("RecordingScreen", "✅ Detected: ${result.gesture} (${(result.confidence * 100).toInt()}%)")
+                                                
+                                                detectedGesture = result.gesture
+                                                detectionConfidence = result.confidence
+                                                
+                                                // Auto-validate jika confidence cukup (>= 40% untuk lebih akurat)
+                                                if (result.confidence >= 0.4f) {
+                                                    val validationResult = GestureValidator.validate(
+                                                        recognizedGesture = result.gesture,
+                                                        targetGesture = question.targetGesture,
+                                                        confidence = result.confidence,
+                                                        questionType = question.type
+                                                    )
+                                                    
+                                                    if (validationResult.isCorrect) {
+                                                        android.util.Log.d("RecordingScreen", "🎉 CORRECT! Moving to next question")
+                                                        // Jika benar, trigger callback setelah delay kecil untuk visual feedback
+                                                        kotlinx.coroutines.delay(500)
+                                                        onGestureRecognized(result)
+                                                        return@launch
+                                                    } else {
+                                                        android.util.Log.d("RecordingScreen", "❌ Wrong gesture: ${result.gesture} != ${question.targetGesture}")
+                                                    }
+                                                }
+                                            } else {
+                                                // Reset jika detection gagal, confidence terlalu rendah, atau tidak ada gesture
+                                                if (result.gesture.isEmpty()) {
+                                                    android.util.Log.d("RecordingScreen", "⚠️ No gesture detected (confidence: ${(result.confidence * 100).toInt()}%)")
+                                                } else {
+                                                    android.util.Log.d("RecordingScreen", "⚠️ Low confidence: ${result.gesture} (${(result.confidence * 100).toInt()}%)")
+                                                }
+                                                detectedGesture = null
+                                                detectionConfidence = 0f
+                                            }
+                                            
+                                            isProcessing = false
+                                        } catch (e: Exception) {
+                                            android.util.Log.e("RecordingScreen", "❌ Error processing gesture: ${e.message}", e)
+                                            detectedGesture = null
+                                            detectionConfidence = 0f
+                                            isProcessing = false
+                                        }
+                                    }
+                                } else {
+                                    // Close image jika tidak di-process (throttled)
+                                    imageProxy.close()
+                                }
+                            }
+                        }
                     
                     val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
                     
@@ -384,7 +491,7 @@ private fun RecordingScreen(
                             lifecycleOwner,
                             cameraSelector,
                             preview,
-                            imageCapture
+                            imageAnalysis
                         )
                     } catch (e: Exception) {
                         e.printStackTrace()
@@ -396,106 +503,121 @@ private fun RecordingScreen(
             modifier = Modifier.fillMaxSize()
         )
         
-        // Overlay UI
-        Column(
+        // Status Indicator (Top Center)
+        Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .align(Alignment.TopCenter)
+                .padding(top = 40.dp)
         ) {
-            // Target display
+            Card(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.Black.copy(alpha = 0.7f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (isProcessing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    }
+                    Text(
+                        text = when {
+                            isProcessing -> "Memproses gerakan..."
+                            detectedGesture != null && detectionConfidence >= 0.2f -> {
+                                val confidencePercent = (detectionConfidence * 100).toInt()
+                                val status = if (detectionConfidence >= 0.4f) {
+                                    val isCorrect = detectedGesture?.uppercase() == question.targetGesture.uppercase()
+                                    if (isCorrect) "✅ Benar!" else "Terdeteksi: $detectedGesture ($confidencePercent%)"
+                                } else {
+                                    "Terdeteksi: $detectedGesture ($confidencePercent%)"
+                                }
+                                status
+                            }
+                            else -> "Arahkan tangan ke kamera..."
+                        },
+                        fontSize = 13.sp,
+                        color = Color.White,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+        
+        // Soal Quiz Bisindo (Bottom)
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+        ) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                shape = RoundedCornerShape(16.dp),
+                    .padding(16.dp),
+                shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = Color.White.copy(alpha = 0.95f)
-                )
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Peragakan:",
-                        fontSize = 14.sp,
+                        text = "Soal ${question.questionNumber}",
+                        fontSize = 12.sp,
                         color = Color(0xFF7F8C8D),
+                        fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
+                    
+                    Text(
+                        text = "Peragakan gerakan Bisindo:",
+                        fontSize = 14.sp,
+                        color = Color(0xFF5D6D7E),
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                    
                     Text(
                         text = question.targetGesture,
-                        fontSize = 32.sp,
+                        fontSize = 48.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF2C3E50),
                         textAlign = TextAlign.Center
                     )
-                }
-            }
-            
-            Spacer(modifier = Modifier.weight(1f))
-            
-            // Capture button
-            Button(
-                onClick = {
-                    if (!isCapturing && imageCapture != null) {
-                        isCapturing = true
-                        scope.launch {
-                            // TODO: Implement actual image capture
-                            // Contoh implementasi:
-                            // 1. Capture image menggunakan imageCapture.takePicture()
-                            // 2. Convert ke format yang dibutuhkan model (Bitmap/ByteArray)
-                            // 3. Pass ke recognitionModel.recognizeGesture()
-                            
-                            // Untuk sekarang, simulate dengan delay
-                            delay(500)
-                            
-                            // Simulate recognition result
-                            val result = recognitionModel.recognizeGesture(
-                                // Placeholder - ganti dengan image data sebenarnya
-                                "placeholder_image_data"
+                    
+                    // Feedback indicator (hanya muncul jika ada detection)
+                    if (detectedGesture != null && !isProcessing) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        val isCorrect = detectedGesture?.uppercase() == question.targetGesture.uppercase()
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = if (isCorrect) "✅" else "❌",
+                                fontSize = 18.sp
                             )
-                            onGestureRecognized(result)
-                            isCapturing = false
+                            Text(
+                                text = if (isCorrect) "Benar!" else "$detectedGesture",
+                                fontSize = 14.sp,
+                                color = if (isCorrect) Color(0xFF27AE60) else Color(0xFFE74C3C),
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
                     }
-                },
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isCapturing) Color(0xFF95A5A6) else Color(0xFFE74C3C)
-                ),
-                enabled = !isCapturing
-            ) {
-                if (isCapturing) {
-                    CircularProgressIndicator(
-                        color = Color.White,
-                        modifier = Modifier.size(32.dp)
-                    )
-                } else {
-                    Text(
-                        text = "📸",
-                        fontSize = 32.sp
-                    )
                 }
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Text(
-                text = if (isCapturing) "Memproses..." else "Tekan untuk capture",
-                fontSize = 14.sp,
-                color = Color.White,
-                modifier = Modifier
-                    .background(
-                        Color.Black.copy(alpha = 0.5f),
-                        RoundedCornerShape(8.dp)
-                    )
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            )
         }
     }
 }
@@ -505,52 +627,40 @@ private fun ProcessingScreen(
     recognizedGesture: String,
     confidence: Float
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        CircularProgressIndicator(
-            color = Color(0xFF4A90E2),
-            modifier = Modifier.size(64.dp),
-            strokeWidth = 4.dp
-        )
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Text(
-            text = "Memproses gerakan...",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Medium,
-            color = Color(0xFF2C3E50)
-        )
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        Text(
-            text = "Terdeteksi: $recognizedGesture",
-            fontSize = 16.sp,
-            color = Color(0xFF7F8C8D)
-        )
-        
-        Text(
-            text = "Confidence: ${(confidence * 100).toInt()}%",
-            fontSize = 14.sp,
-            color = Color(0xFF7F8C8D)
-        )
-    }
-}
-
-@Composable
-private fun FeedbackCorrectScreen(
-    onNext: () -> Unit
-) {
+    // Animation untuk loading indicator
+    val infiniteTransition = rememberInfiniteTransition(label = "processing")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.8f,
+        targetValue = 1.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
+    )
+    
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "alpha"
+    )
+    
+    // Animation untuk text fade in
+    var textVisible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        delay(1500)
-        onNext()
+        delay(300)
+        textVisible = true
     }
+    
+    val textAlpha by animateFloatAsState(
+        targetValue = if (textVisible) 1f else 0f,
+        animationSpec = tween(500),
+        label = "textAlpha"
+    )
     
     Column(
         modifier = Modifier
@@ -559,28 +669,124 @@ private fun FeedbackCorrectScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(
-            imageVector = Icons.Default.CheckCircle,
-            contentDescription = "Correct",
-            tint = Color(0xFF27AE60),
-            modifier = Modifier.size(72.dp)
+        // Animated loading indicator
+        CircularProgressIndicator(
+            color = Color(0xFF4A90E2),
+            modifier = Modifier
+                .size(64.dp)
+                .scale(scale)
+                .alpha(alpha),
+            strokeWidth = 4.dp
         )
         
         Spacer(modifier = Modifier.height(24.dp))
         
+        // Animated text
         Text(
-            text = "YEYY KAMU BENAR!",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF27AE60),
-            textAlign = TextAlign.Center
+            text = "Memproses gerakan...",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color(0xFF2C3E50),
+            modifier = Modifier.alpha(textAlpha)
         )
         
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         
-        CircularProgressIndicator(
+        Text(
+            text = "Terdeteksi: $recognizedGesture",
+            fontSize = 16.sp,
+            color = Color(0xFF7F8C8D),
+            modifier = Modifier.alpha(textAlpha)
+        )
+        
+        Text(
+            text = "Confidence: ${(confidence * 100).toInt()}%",
+            fontSize = 14.sp,
+            color = Color(0xFF7F8C8D),
+            modifier = Modifier.alpha(textAlpha)
+        )
+    }
+}
+
+@Composable
+private fun FeedbackCorrectScreen(
+    onNext: () -> Unit
+) {
+    // Success animation: scale up + fade in
+    var animate by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(Unit) {
+        animate = true
+        delay(2000)
+        onNext()
+    }
+    
+    val scale by animateFloatAsState(
+        targetValue = if (animate) 1f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "scale"
+    )
+    
+    val alpha by animateFloatAsState(
+        targetValue = if (animate) 1f else 0f,
+        animationSpec = tween(300),
+        label = "alpha"
+    )
+    
+    // Pulsing animation untuk check icon
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulseScale"
+    )
+    
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        // Success icon dengan animasi
+        Icon(
+            imageVector = Icons.Default.CheckCircle,
+            contentDescription = "Correct",
+            tint = Color(0xFF27AE60),
+            modifier = Modifier
+                .size(120.dp)
+                .scale(scale * pulseScale)
+                .alpha(alpha)
+        )
+        
+        Spacer(modifier = Modifier.height(32.dp))
+        
+        // Success text dengan animasi
+        Text(
+            text = "✅ YEYY KAMU BENAR!",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
             color = Color(0xFF27AE60),
-            modifier = Modifier.size(40.dp)
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .scale(scale)
+                .alpha(alpha)
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Text(
+            text = "Lanjut ke soal berikutnya...",
+            fontSize = 16.sp,
+            color = Color(0xFF7F8C8D),
+            modifier = Modifier.alpha(alpha)
         )
     }
 }
@@ -591,6 +797,43 @@ private fun FeedbackWrongScreen(
     correctAnswer: String,
     onRetry: () -> Unit
 ) {
+    // Error animation: shake + fade in
+    var animate by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(Unit) {
+        delay(100)
+        animate = true
+    }
+    
+    // Shake animation untuk error icon (shake 3x)
+    var shakeAnimation by remember { mutableStateOf(0f) }
+    
+    LaunchedEffect(animate) {
+        if (animate) {
+            // Shake left-right 3 times
+            repeat(6) {
+                shakeAnimation = if (it % 2 == 0) 10f else -10f
+                delay(50)
+            }
+            shakeAnimation = 0f // Return to center
+        }
+    }
+    
+    val alpha by animateFloatAsState(
+        targetValue = if (animate) 1f else 0f,
+        animationSpec = tween(400),
+        label = "alpha"
+    )
+    
+    val scale by animateFloatAsState(
+        targetValue = if (animate) 1f else 0.8f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "scale"
+    )
+    
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -600,12 +843,33 @@ private fun FeedbackWrongScreen(
     ) {
         Spacer(modifier = Modifier.weight(1f))
         
+        // Error icon dengan shake animation
+        val shakeOffset by animateFloatAsState(
+            targetValue = shakeAnimation,
+            animationSpec = tween<Float>(50, easing = LinearEasing),
+            label = "shakeOffset"
+        )
+        
         Text(
-            text = "❌ SALAH",
+            text = "❌",
+            fontSize = 80.sp,
+            modifier = Modifier
+                .offset(x = shakeOffset.dp)
+                .scale(scale)
+                .alpha(alpha)
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Text(
+            text = "SALAH",
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFFE74C3C),
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .scale(scale)
+                .alpha(alpha)
         )
         
         Spacer(modifier = Modifier.height(16.dp))
@@ -615,17 +879,23 @@ private fun FeedbackWrongScreen(
             fontSize = 18.sp,
             fontWeight = FontWeight.Medium,
             color = Color(0xFF5D6D7E),
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            modifier = Modifier.alpha(alpha)
         )
         
         Spacer(modifier = Modifier.height(24.dp))
         
+        // Card dengan animasi fade in
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .alpha(alpha)
+                .scale(scale),
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(
                 containerColor = Color(0xFFF5F5F5)
-            )
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Column(
                 modifier = Modifier
@@ -638,7 +908,7 @@ private fun FeedbackWrongScreen(
                     fontSize = 14.sp,
                     color = Color(0xFF7F8C8D)
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Jawaban benar: $correctAnswer",
                     fontSize = 16.sp,
@@ -650,18 +920,22 @@ private fun FeedbackWrongScreen(
         
         Spacer(modifier = Modifier.weight(1f))
         
+        // Retry button dengan animasi
         Button(
             onClick = onRetry,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .alpha(alpha),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFFE74C3C)
             ),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
         ) {
             Row(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(vertical = 8.dp)
+                modifier = Modifier.padding(vertical = 12.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
@@ -679,7 +953,7 @@ private fun FeedbackWrongScreen(
             }
         }
         
-        Spacer(modifier = Modifier.weight(0.5f))
+        Spacer(modifier = Modifier.height(32.dp))
     }
 }
 
