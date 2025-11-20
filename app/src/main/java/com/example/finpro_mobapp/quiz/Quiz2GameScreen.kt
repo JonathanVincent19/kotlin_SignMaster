@@ -189,28 +189,58 @@ fun Quiz2GameScreen(
                             RealGestureRecognitionModel(context, isFrontCamera = true)
                         }
                         
+                        // Untuk level 2 dan 3, gunakan letter-by-letter validation
+                        if (currentQuestion!!.type == Quiz2QuestionType.SINGLE_WORD || 
+                            currentQuestion.type == Quiz2QuestionType.TWO_WORDS) {
+                            RecordingScreenLetterByLetter(
+                                question = currentQuestion,
+                                context = context,
+                                lifecycleOwner = lifecycleOwner,
+                                recognitionModel = model,
+                                onComplete = { result ->
+                                    recognizedGesture = result.gesture
+                                    confidence = result.confidence
+                                    
+                                    scope.launch {
+                                        userAnswers.add(
+                                            Quiz2Answer(
+                                                questionId = currentQuestion.id,
+                                                recognizedGesture = result.gesture,
+                                                confidence = result.confidence,
+                                                correctAnswer = currentQuestion.targetGesture,
+                                                isCorrect = true,
+                                                attempts = 1
+                                            )
+                                        )
+                                        completedQuestions++
+                                        gameState = Quiz2GameState.FEEDBACK_CORRECT
+                                    }
+                                }
+                            )
+                        } else {
+                            // Level 1: validation biasa (huruf per huruf, masing-masing soal 1 huruf)
                         RecordingScreen(
-                            question = currentQuestion!!,
+                                question = currentQuestion,
                             context = context,
                             lifecycleOwner = lifecycleOwner,
-                            recognitionModel = model,
+                                recognitionModel = model,
                             onGestureRecognized = { result ->
                                 recognizedGesture = result.gesture
                                 confidence = result.confidence
                                 gameState = Quiz2GameState.PROCESSING
                                 
-                                // Backend validation menggunakan GestureValidator
-                                val validationResult = GestureValidator.validate(
-                                    recognizedGesture = result.gesture,
-                                    targetGesture = currentQuestion.targetGesture,
-                                    confidence = result.confidence,
-                                    questionType = currentQuestion.type
-                                )
+                                    // Backend validation menggunakan GestureValidator
+                                    val validationResult = GestureValidator.validate(
+                                        recognizedGesture = result.gesture,
+                                        targetGesture = currentQuestion.targetGesture,
+                                        confidence = result.confidence,
+                                        questionType = currentQuestion.type
+                                    )
                                 
                                 scope.launch {
-                                    delay(1500) // Show processing dengan animasi
+                                        delay(1500) // Show processing dengan animasi
                                     
-                                    if (validationResult.isCorrect) {
+                                        if (validationResult.isCorrect) {
                                         userAnswers.add(
                                             Quiz2Answer(
                                                 questionId = currentQuestion.id,
@@ -229,6 +259,7 @@ fun Quiz2GameScreen(
                                 }
                             }
                         )
+                        }
                     } else {
                         PermissionRequestScreen(
                             onRequestPermission = {
@@ -364,6 +395,435 @@ private fun ShowingTargetScreen(
     }
 }
 
+/**
+ * RecordingScreen untuk Level 2 dan 3: Validasi huruf per huruf
+ * Setiap huruf yang benar diberi design hijau dan di-keep, lanjut ke huruf berikutnya
+ */
+@Composable
+private fun RecordingScreenLetterByLetter(
+    question: Quiz2Question,
+    context: Context,
+    lifecycleOwner: LifecycleOwner,
+    recognitionModel: GestureRecognitionModel,
+    onComplete: (RecognitionResult) -> Unit
+) {
+    var isProcessing by remember { mutableStateOf(false) }
+    var detectedGesture by remember { mutableStateOf<String?>(null) }
+    var detectionConfidence by remember { mutableStateOf(0f) }
+    var lastProcessTime by remember { mutableStateOf(0L) }
+    
+    // Track huruf yang sudah benar (index)
+    var completedLetters by remember { mutableStateOf(0) }
+    // Flag untuk prevent double detection setelah huruf benar
+    var isLetterJustCompleted by remember { mutableStateOf(false) }
+    var lastCompletedLetterTime by remember { mutableStateOf(0L) }
+    // Cache target letter untuk mencegah perubahan selama processing
+    var currentTargetLetterState by remember { mutableStateOf<String?>(null) }
+    
+    val targetWord = question.targetGesture.uppercase()
+    
+    // Update currentTargetLetterState ketika completedLetters berubah
+    LaunchedEffect(completedLetters) {
+        val currentLetterIndex = completedLetters
+        currentTargetLetterState = if (currentLetterIndex < targetWord.length) {
+            val letter = targetWord[currentLetterIndex]
+            // Handle spasi khusus
+            if (letter == ' ') " " else letter.toString()
+        } else {
+            null
+        }
+    }
+    
+    // Initialize currentTargetLetterState
+    val currentTargetLetter = currentTargetLetterState ?: if (completedLetters < targetWord.length) {
+        val letter = targetWord[completedLetters]
+        if (letter == ' ') " " else letter.toString()
+    } else {
+        null
+    }
+    
+    val scope = rememberCoroutineScope()
+    val cameraExecutor = remember { java.util.concurrent.Executors.newSingleThreadExecutor() }
+    
+    DisposableEffect(Unit) {
+        onDispose {
+            cameraExecutor.shutdown()
+        }
+    }
+    
+    // Jangan auto-complete langsung
+    // Biarkan SuccessAnimationOverlay yang handle animasi dan trigger onComplete
+    
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        // Camera Preview (Full Screen)
+        AndroidView(
+            factory = { ctx ->
+                val previewView = PreviewView(ctx)
+                val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
+                
+                cameraProviderFuture.addListener({
+                    val cameraProvider = cameraProviderFuture.get()
+                    
+                    val preview = Preview.Builder().build().also {
+                        it.setSurfaceProvider(previewView.surfaceProvider)
+                    }
+                    
+                    val imageAnalysis = ImageAnalysis.Builder()
+                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                        .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
+                        .build()
+                        .also {
+                            it.setAnalyzer(cameraExecutor) { imageProxy ->
+                                val currentTime = System.currentTimeMillis()
+                                
+                                // Cooldown setelah huruf benar: 800ms untuk mencegah double detection
+                                val timeSinceLastCompletion = currentTime - lastCompletedLetterTime
+                                val shouldSkipDueToCooldown = isLetterJustCompleted && timeSinceLastCompletion < 800
+                                
+                                // Throttle: Process setiap 500ms dan skip jika masih cooldown
+                                if (!isProcessing && !shouldSkipDueToCooldown && (currentTime - lastProcessTime) > 500) {
+                                    isProcessing = true
+                                    lastProcessTime = currentTime
+                                    
+                                    scope.launch {
+                                        try {
+                                            // Get current target letter (harus di dalam launch scope untuk avoid stale value)
+                                            val targetLetterNow = if (completedLetters < targetWord.length) {
+                                                val letter = targetWord[completedLetters]
+                                                if (letter == ' ') " " else letter.toString()
+                                            } else null
+                                            
+                                            // Handle spasi: skip validasi dan langsung lanjut
+                                            if (targetLetterNow == " ") {
+                                                android.util.Log.d("RecordingScreenLetterByLetter", "⏭️ Spasi - skip ke huruf berikutnya (${completedLetters + 1}/${targetWord.length})")
+                                                
+                                                // Mark sebagai completed dan set cooldown
+                                                isLetterJustCompleted = true
+                                                lastCompletedLetterTime = System.currentTimeMillis()
+                                                
+                                                // Update IMMEDIATELY untuk prevent double detection
+                                                completedLetters++
+                                                
+                                                // Reset state
+                                                detectedGesture = null
+                                                detectionConfidence = 0f
+                                                
+                                                // Delay untuk visual feedback
+                                                delay(500)
+                                                
+                                                // Reset cooldown
+                                                isLetterJustCompleted = false
+                                                
+                                                imageProxy.close()
+                                                isProcessing = false
+                                                return@launch
+                                            }
+                                            
+                                            val result = withTimeoutOrNull(5000) {
+                                                recognitionModel.recognizeGesture(imageProxy)
+                                            } ?: run {
+                                                detectedGesture = null
+                                                detectionConfidence = 0f
+                                                isProcessing = false
+                                                imageProxy.close()
+                                                return@launch
+                                            }
+                                            
+                                            if (result.gesture.isNotEmpty() && result.confidence >= 0.2f) {
+                                                detectedGesture = result.gesture
+                                                detectionConfidence = result.confidence
+                                                
+                                                // Validasi huruf per huruf (hanya jika masih huruf target yang sama)
+                                                if (targetLetterNow != null && result.confidence >= 0.4f) {
+                                                    val detectedLetter = result.gesture.uppercase().trim()
+                                                    
+                                                    // Double-check: pastikan target letter masih sama (untuk prevent race condition)
+                                                    val currentTarget = if (completedLetters < targetWord.length) {
+                                                        val letter = targetWord[completedLetters]
+                                                        if (letter == ' ') " " else letter.toString()
+                                                    } else null
+                                                    
+                                                    // Check apakah huruf yang dideteksi adalah huruf target saat ini
+                                                    if (currentTarget == targetLetterNow && detectedLetter == targetLetterNow) {
+                                                        android.util.Log.d("RecordingScreenLetterByLetter", "✅ Huruf '$targetLetterNow' benar! Progress: ${completedLetters + 1}/${targetWord.length}")
+                                                        
+                                                        // Set cooldown flag SEBELUM update completedLetters
+                                                        isLetterJustCompleted = true
+                                                        lastCompletedLetterTime = System.currentTimeMillis()
+                                                        
+                                                        // Update completed letters IMMEDIATELY untuk mencegah deteksi ulang
+                                                        completedLetters++
+                                                        
+                                                        // Reset detection state IMMEDIATELY
+                                                        detectedGesture = null
+                                                        detectionConfidence = 0f
+                                                        
+                                                        // Delay untuk visual feedback (setelah state update)
+                                                        delay(1000) // Cooldown lebih lama (1 detik)
+                                                        
+                                                        // Reset cooldown setelah delay
+                                                        isLetterJustCompleted = false
+                                                        
+                                                        val nextLetter = if (completedLetters < targetWord.length) {
+                                                            val letter = targetWord[completedLetters]
+                                                            if (letter == ' ') " " else letter.toString()
+                                                        } else "SELESAI"
+                                                        android.util.Log.d("RecordingScreenLetterByLetter", "🔄 Lanjut ke huruf berikutnya: $nextLetter")
+                                                    } else {
+                                                        android.util.Log.d("RecordingScreenLetterByLetter", "❌ Salah: '$detectedLetter' != '$targetLetterNow' (Expected: $targetLetterNow, Current: $currentTarget, Progress: ${completedLetters}/${targetWord.length})")
+                                                    }
+                                                }
+                                            } else {
+                                                detectedGesture = null
+                                                detectionConfidence = 0f
+                                            }
+                                            
+                                            isProcessing = false
+                                        } catch (e: Exception) {
+                                            android.util.Log.e("RecordingScreenLetterByLetter", "❌ Error: ${e.message}", e)
+                                            detectedGesture = null
+                                            detectionConfidence = 0f
+                                            isProcessing = false
+                                        }
+                                    }
+                                } else {
+                                    imageProxy.close()
+                                }
+                            }
+                        }
+                    
+                    val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
+                    
+                    try {
+                        cameraProvider.unbindAll()
+                        cameraProvider.bindToLifecycle(
+                            lifecycleOwner,
+                            cameraSelector,
+                            preview,
+                            imageAnalysis
+                        )
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }, ContextCompat.getMainExecutor(ctx))
+                
+                previewView
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+        
+        // Status Indicator (Top Center)
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 40.dp)
+        ) {
+            Card(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.Black.copy(alpha = 0.7f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (isProcessing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    }
+                    Text(
+                        text = when {
+                            completedLetters >= targetWord.length -> "✅ Selesai!"
+                            isProcessing -> "Memproses gerakan..."
+                            currentTargetLetter != null -> {
+                                if (currentTargetLetter == " ") {
+                                    "Spasi - Lanjut ke huruf berikutnya (${completedLetters + 1}/${targetWord.length})"
+                                } else {
+                                    "Peragakan: $currentTargetLetter (${completedLetters + 1}/${targetWord.length})"
+                                }
+                            }
+                            else -> "Arahkan tangan ke kamera..."
+                        },
+                        fontSize = 13.sp,
+                        color = Color.White,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+        
+        // Soal Quiz Bisindo (Bottom) dengan huruf per huruf
+        Box(
+                modifier = Modifier
+                .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White.copy(alpha = 0.95f)
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Soal ${question.questionNumber}",
+                        fontSize = 12.sp,
+                        color = Color(0xFF7F8C8D),
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    
+                    Text(
+                        text = "Peragakan gerakan Bisindo:",
+                        fontSize = 14.sp,
+                        color = Color(0xFF5D6D7E),
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    
+                    // Display huruf per huruf dengan design hijau untuk yang sudah benar
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        targetWord.forEachIndexed { index, letter ->
+                            val isCompleted = index < completedLetters
+                            val isCurrent = index == completedLetters
+                            val isSpace = letter == ' '
+                            
+                            // Untuk spasi, tampilkan sebagai kotak kosong yang lebih kecil
+                            if (isSpace) {
+                                Box(
+                                    modifier = Modifier
+                                        .padding(horizontal = 2.dp)
+                                        .width(20.dp)
+                                        .height(50.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    // Spasi ditampilkan sebagai garis vertikal
+                                    Box(
+                                        modifier = Modifier
+                                            .width(2.dp)
+                                            .height(30.dp)
+                                            .background(
+                                                color = when {
+                                                    isCompleted -> Color(0xFF27AE60)
+                                                    isCurrent -> Color(0xFF3498DB)
+                                                    else -> Color(0xFFBDC3C7)
+                                                },
+                                                shape = RoundedCornerShape(1.dp)
+                                            )
+                                    )
+                                }
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .padding(horizontal = 4.dp)
+                                        .width(50.dp)
+                                        .height(50.dp)
+                                        .background(
+                                            color = when {
+                                                isCompleted -> Color(0xFF27AE60) // Hijau untuk huruf yang sudah benar
+                                                isCurrent -> Color(0xFF3498DB) // Biru untuk huruf yang sedang ditargetkan
+                                                else -> Color(0xFFECF0F1) // Abu-abu untuk huruf yang belum
+                                            },
+                                            shape = RoundedCornerShape(8.dp)
+                                        )
+                                        .border(
+                                            width = if (isCurrent) 2.dp else 0.dp,
+                                            color = Color(0xFFE74C3C),
+                                            shape = RoundedCornerShape(8.dp)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = letter.toString(),
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                                        color = when {
+                                            isCompleted -> Color.White
+                                            isCurrent -> Color.White
+                                            else -> Color(0xFF95A5A6)
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Progress indicator
+                    if (completedLetters > 0) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "Progress: ${completedLetters}/${targetWord.length}",
+                            fontSize = 12.sp,
+                            color = Color(0xFF27AE60),
+                            fontWeight = FontWeight.SemiBold
+                    )
+                }
+                    
+                    // Feedback indicator
+                    if (detectedGesture != null && !isProcessing && currentTargetLetter != null) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        val isCorrect = detectedGesture?.uppercase() == currentTargetLetter
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = if (isCorrect) "✅" else "❌",
+                                fontSize = 18.sp
+                            )
+                            Text(
+                                text = if (isCorrect) "Benar!" else "Salah: $detectedGesture",
+                                fontSize = 14.sp,
+                                color = if (isCorrect) Color(0xFF27AE60) else Color(0xFFE74C3C),
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Success Animation Overlay - Muncul ketika semua huruf sudah benar (seperti level 1)
+        if (completedLetters >= targetWord.length) {
+            SuccessAnimationOverlay(
+                onAnimationComplete = {
+                    // Trigger completion setelah animasi selesai
+                    delay(500)
+                    onComplete(
+                        RecognitionResult(
+                            gesture = targetWord,
+                            confidence = 1.0f,
+                            processingTime = 0L
+                        )
+                    )
+                }
+            )
+        }
+    }
+}
+
 @Composable
 private fun RecordingScreen(
     question: Quiz2Question,
@@ -415,7 +875,7 @@ private fun RecordingScreen(
                                     isProcessing = true
                                     lastProcessTime = currentTime
                                     
-                                    scope.launch {
+                        scope.launch {
                                         try {
                                             // Real-time recognition dengan timeout lebih pendek
                                             // Timeout lebih lama (5 detik) karena MediaPipe LIVE_STREAM butuh waktu untuk callback
@@ -451,7 +911,7 @@ private fun RecordingScreen(
                                                         android.util.Log.d("RecordingScreen", "🎉 CORRECT! Moving to next question")
                                                         // Jika benar, trigger callback setelah delay kecil untuk visual feedback
                                                         kotlinx.coroutines.delay(500)
-                                                        onGestureRecognized(result)
+                            onGestureRecognized(result)
                                                         return@launch
                                                     } else {
                                                         android.util.Log.d("RecordingScreen", "❌ Wrong gesture: ${result.gesture} != ${question.targetGesture}")
@@ -474,8 +934,8 @@ private fun RecordingScreen(
                                             detectedGesture = null
                                             detectionConfidence = 0f
                                             isProcessing = false
-                                        }
-                                    }
+                        }
+                    }
                                 } else {
                                     // Close image jika tidak di-process (throttled)
                                     imageProxy.close()
@@ -505,7 +965,7 @@ private fun RecordingScreen(
         
         // Status Indicator (Top Center)
         Box(
-            modifier = Modifier
+                modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(top = 40.dp)
         ) {
@@ -520,13 +980,13 @@ private fun RecordingScreen(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
-                ) {
+            ) {
                     if (isProcessing) {
-                        CircularProgressIndicator(
+                    CircularProgressIndicator(
                             modifier = Modifier.size(16.dp),
-                            color = Color.White,
+                        color = Color.White,
                             strokeWidth = 2.dp
-                        )
+                    )
                     }
                     Text(
                         text = when {
@@ -580,10 +1040,10 @@ private fun RecordingScreen(
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    
-                    Text(
+            
+            Text(
                         text = "Peragakan gerakan Bisindo:",
-                        fontSize = 14.sp,
+                fontSize = 14.sp,
                         color = Color(0xFF5D6D7E),
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
@@ -757,7 +1217,7 @@ private fun FeedbackCorrectScreen(
     ) {
         // Success icon dengan animasi
         Icon(
-            imageVector = Icons.Default.CheckCircle,
+            imageVector = Icons.Filled.CheckCircle,
             contentDescription = "Correct",
             tint = Color(0xFF27AE60),
             modifier = Modifier
@@ -788,6 +1248,102 @@ private fun FeedbackCorrectScreen(
             color = Color(0xFF7F8C8D),
             modifier = Modifier.alpha(alpha)
         )
+    }
+}
+
+/**
+ * Success Animation Overlay untuk Level 2 & 3
+ * Muncul ketika semua huruf sudah benar (kata sudah hijau semua)
+ * Animasi sama seperti FeedbackCorrectScreen di level 1
+ */
+@Composable
+private fun SuccessAnimationOverlay(
+    onAnimationComplete: suspend () -> Unit
+) {
+    // Success animation: scale up + fade in
+    var animate by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(Unit) {
+        delay(100) // Small delay untuk smooth transition
+        animate = true
+        delay(2000) // Show animation for 2 seconds
+        onAnimationComplete()
+    }
+    
+    val scale by animateFloatAsState(
+        targetValue = if (animate) 1f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "scale"
+    )
+    
+    val alpha by animateFloatAsState(
+        targetValue = if (animate) 1f else 0f,
+        animationSpec = tween(300),
+        label = "alpha"
+    )
+    
+    // Pulsing animation untuk check icon
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulseScale"
+    )
+    
+    // Overlay background dengan semi-transparent
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.7f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // Success icon dengan animasi
+            Icon(
+                imageVector = Icons.Filled.CheckCircle,
+                contentDescription = "Correct",
+                tint = Color(0xFF27AE60),
+                modifier = Modifier
+                    .size(120.dp)
+                    .scale(scale * pulseScale)
+                    .alpha(alpha)
+            )
+            
+            Spacer(modifier = Modifier.height(32.dp))
+            
+            // Success text dengan animasi
+            Text(
+                text = "✅ YEYY KAMU BENAR!",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .scale(scale)
+                    .alpha(alpha)
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Text(
+                text = "Lanjut ke soal berikutnya...",
+                fontSize = 16.sp,
+                color = Color.White.copy(alpha = 0.9f),
+                modifier = Modifier.alpha(alpha)
+            )
+        }
     }
 }
 

@@ -11,26 +11,15 @@ object Quiz2QuestionBank {
         "A", "B", "C", "D", "E", "F", "G", "H", "I", "J"
     )
     
-    // Level 2: Peragakan 1 Kata (8 soal)
+    // Level 2: Peragakan 1 Kata (2 soal)
     val level2_words: List<String> = listOf(
         "SAYA",
-        "NAMA",
-        "BUKU",
-        "MEJA",
-        "KAKI",
-        "MATA",
-        "TOPI",
-        "BAJU"
+        "NAMA"
     )
     
-    // Level 3: Peragakan 2 Kata (6 soal)
+    // Level 3: Peragakan 2 Kata (1 soal - kalimat pendek)
     val level3_phrases: List<String> = listOf(
-        "NAMA SAYA",
-        "SAYA BAIK",
-        "BUKU INI",
-        "AKU MAKAN",
-        "TEMAN BAIK",
-        "RUMAH BESAR"
+        "NAMA SAYA"
     )
     
     /**
