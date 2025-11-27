@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import com.example.finpro_mobapp.StatisticsManager
 
 /**
  * Container untuk mengelola navigasi Quiz 1
@@ -26,6 +27,7 @@ fun Quiz1Container(
 ) {
     val context = LocalContext.current
     val progressManager = remember { QuizProgressManager(context) }
+    val statisticsManager = remember { StatisticsManager(context) }
     
     var currentScreen by remember { mutableStateOf(Quiz1Screen.MAIN_LEVEL_SELECTION) }
     var levels by remember { mutableStateOf(loadLevelsWithProgress(progressManager)) }
@@ -136,6 +138,11 @@ fun Quiz1Container(
         
         Quiz1Screen.FINAL -> {
             selectedSubLevel?.let { subLevel ->
+                // Update streak saat quiz selesai
+                LaunchedEffect(Unit) {
+                    statisticsManager.updateStreak()
+                }
+                
                 // Find updated sub-level data
                 val updatedSubLevel = levels
                     .find { it.id == subLevel.parentLevelId }

@@ -29,6 +29,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.finpro_mobapp.ui.theme.FINPRO_MOBAPPTheme
 import java.util.*
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.LaunchedEffect
 
 // Daily tips data
 private val dailyTips = listOf(
@@ -69,10 +73,13 @@ private fun getDailyTip(): String {
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
+    userName: String = "Pengguna",
     onNavigateToDictionary: () -> Unit = {},
     onNavigateToQuiz: () -> Unit = {},
     onMenuClick: () -> Unit = {}
 ) {
+    // Extract first name from full name (e.g., "Jonathan Vincent" -> "Jonathan")
+    val firstName = userName.split(" ").firstOrNull() ?: userName
     // Background with visible gradient
     Box(
         modifier = modifier
@@ -114,11 +121,11 @@ fun HomeScreen(
             ) {
                 // Logo Placeholder
                 Image(
-                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                    painter = painterResource(id = R.drawable.logobaru),
                     contentDescription = "App Logo",
                     modifier = Modifier
-                        .width(100.dp)
-                        .height(35.dp),
+                        .width(120.dp)
+                        .height(55.dp),
                     contentScale = ContentScale.Fit
                 )
                 
@@ -142,16 +149,16 @@ fun HomeScreen(
                     .padding(bottom = 18.dp)
             ) {
                 Text(
-                    text = "👋 Hai Jojo!",
+                    text = "👋 Hai $firstName!",
                     fontSize = 26.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF2C3E50)
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = " Sudah belajar hari ini?",
+                    text = " Sudahkan kamu belajar hari ini?",
 
-                    fontSize = 22.sp,
+                    fontSize = 18.sp,
                     color = Color(0xFF7F8C8D)
                 )
             }
@@ -192,7 +199,7 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(32.dp))
             
             // Statistics Section
-            StatisticsSection()
+            StatisticsSection(context = LocalContext.current)
             
             Spacer(modifier = Modifier.height(32.dp))
             
@@ -216,7 +223,7 @@ fun HeroBanner(onNavigateToDictionary: () -> Unit) {
             .fillMaxWidth()
             .height(210.dp),
         shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 9.dp)
     ) {
         Box(
             modifier = Modifier
@@ -243,67 +250,65 @@ fun HeroBanner(onNavigateToDictionary: () -> Unit) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(32.dp),
-                verticalArrangement = Arrangement.SpaceBetween,
-                horizontalAlignment = Alignment.Start
+                    .padding(horizontal = 32.dp, vertical = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Text Section
-                Column {
+                // Text Section - sedikit naik
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     Row(
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
                     ) {
                         Text(
                             text = "🎯",
-                            fontSize = 28.sp
+                            fontSize = 26.sp
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Ayo Mulai",
-                            fontSize = 15.sp,
+                            text = "Belajar Bahasa Isyarat Indonesia (BISINDO)",
+                            fontSize = 19.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color.White.copy(alpha = 0.95f)
+                            color = Color.White.copy(alpha = 0.95f),
+                            textAlign = TextAlign.Start
                         )
                     }
                     
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     
+                    // Text ke-2 di tengah
                     Text(
-                        text = "Petualangan\nBelajarmu!",
-                        fontSize = 32.sp,
+                        text = "2.500.000+ tunarungu di Indonesia. Mereka juga ingin didengar!",
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color.White,
-                        lineHeight = 38.sp,
-                        letterSpacing = 0.5.sp
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
                 
-                // Button Section
+                // Spacer untuk simetris - mendorong tombol ke bawah
+                Spacer(modifier = Modifier.weight(1f))
+                
+                // Button Section - di bawah
                 Button(
                     onClick = onNavigateToDictionary,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.White
                     ),
                     shape = RoundedCornerShape(14.dp),
-                    contentPadding = PaddingValues(vertical = 16.dp),
-                    elevation = ButtonDefaults.buttonElevation(
-                        defaultElevation = 4.dp,
-                        pressedElevation = 8.dp
-                    )
+                    contentPadding = PaddingValues(vertical = 8.dp),
                 ) {
                     Text(
                         text = "Mulai Belajar",
                         color = Color(0xFF4A90E2),
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        modifier = Modifier.weight(1f),
                         textAlign = TextAlign.Center
-                    )
-                    Icon(
-                        imageVector = Icons.Default.ArrowForward,
-                        contentDescription = "Arrow",
-                        tint = Color(0xFF4A90E2),
-                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
@@ -353,7 +358,37 @@ fun QuickAccessCard(
 }
 
 @Composable
-fun StatisticsSection() {
+fun StatisticsSection(context: android.content.Context) {
+    val statisticsManager = remember { StatisticsManager(context) }
+    var streakDays by remember { mutableStateOf(0) }
+    var fireIconResource by remember { mutableStateOf(R.drawable.fire_gray) }
+    var streakTextColor by remember { mutableStateOf(Color(0xFFFF6B35)) }
+    
+    // ============================================
+    // UNTUK TESTING IKON API:
+    // 1. Set variabel testIcon di bawah ini ke true
+    // 2. Ganti "orange" dengan: "gray", "orange", "blue", "purple", atau "gold"
+    // 3. Setelah selesai testing, kembalikan testIcon ke false
+    // ============================================
+    val testIcon = false // Set ke true untuk testing
+    val testIconType = "purple" // Pilihan: "gray", "orange", "blue", "purple", "gold"
+    // ============================================
+    
+    // Update streak saat composable pertama kali dibuat
+    LaunchedEffect(Unit) {
+        streakDays = statisticsManager.getCurrentStreak()
+        fireIconResource = if (testIcon) {
+            statisticsManager.getFireIconResourceForTesting(testIconType)
+        } else {
+            statisticsManager.getFireIconResource(streakDays)
+        }
+        streakTextColor = if (testIcon) {
+            statisticsManager.getStreakTextColorForTesting(testIconType)
+        } else {
+            statisticsManager.getStreakTextColor(streakDays)
+        }
+    }
+    
     Column {
         Text(
             text = "⭐ Statistik Belajarmu",
@@ -421,10 +456,14 @@ fun StatisticsSection() {
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.Top
                 ) {
-                    Text(
-                        text = "🔥",
-                        fontSize = 24.sp,
-                        modifier = Modifier.padding(end = 12.dp)
+                    // Fire Icon
+                    Image(
+                        painter = painterResource(id = fireIconResource),
+                        contentDescription = "Streak Fire",
+                        modifier = Modifier
+                            .size(52.dp)
+                            .padding(end = 12.dp),
+                        contentScale = ContentScale.Fit
                     )
                     
                     Column {
@@ -436,14 +475,18 @@ fun StatisticsSection() {
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Coming Soon",
-                            fontSize = 18.sp,
+                            text = "$streakDays Hari",
+                            fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFFFF6B35)
+                            color = streakTextColor
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Mulai streak-mu setelah quiz tersedia!",
+                            text = if (streakDays == 0) {
+                                "Mulai streakmu dengan mengerjakan quiz!"
+                            } else {
+                                "Jangan putus streakmu!"
+                            },
                             fontSize = 13.sp,
                             color = Color(0xFF7F8C8D),
                             lineHeight = 18.sp
@@ -500,8 +543,16 @@ fun DailyTipSection() {
 
 @Composable
 fun DonationBanner() {
+    val context = LocalContext.current
+    val url = "https://kitabisa.com/campaign/bantualidabisadengar"
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                context.startActivity(intent)
+            },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
@@ -522,9 +573,9 @@ fun DonationBanner() {
                     .height(80.dp),
                 contentScale = ContentScale.Fit
             )
-            
+
             Spacer(modifier = Modifier.width(16.dp))
-            
+
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -545,6 +596,7 @@ fun DonationBanner() {
         }
     }
 }
+
 
 // Preview
 @Preview(showBackground = true, showSystemUi = true)

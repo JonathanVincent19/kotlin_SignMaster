@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "771596650876",
+    "project_id": "bisindo-learn",
+    "storage_bucket": "bisindo-learn.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:771596650876:android:20e28f7dcc9d4ff07bbcf9",
+        "android_client_info": {
+          "package_name": "com.example.finpro_mobapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "771596650876-ehquqa7p2dqae0v2c9bl83jicho5negm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.finpro_mobapp",
+            "certificate_hash": "37661a71e305e6ee9d9c607883139911d7773e33"
+          }
+        },
+        {
+          "client_id": "771596650876-hscctpkoi86tn08uesq8jm319robguii.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAtahWp7VDhYM2NpjARkKdbw7P25anKrdg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "771596650876-hscctpkoi86tn08uesq8jm319robguii.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

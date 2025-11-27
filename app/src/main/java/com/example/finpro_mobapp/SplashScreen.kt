@@ -75,36 +75,23 @@ fun SplashScreen(onTimeout: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(32.dp),
+                ,
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             // Logo - Orange M/Arrow shape
             Image(
-                painter = painterResource(id = R.drawable.logo_splash),
+                painter = painterResource(id = R.drawable.logobaru),
                 contentDescription = "App Logo",
                 modifier = Modifier
-                    .size(120.dp)
-                    .alpha(alpha),
+                    .size(250.dp)
+                    .alpha(alpha)
+                    .offset(y = 30.dp),  // Geser logo ke bawah sedikit untuk kurangi jarak
                 contentScale = ContentScale.Fit
             )
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            // App Name
+
             Text(
-                text = "SignMaster",
-                fontSize = 36.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.alpha(alpha)
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
-                text = "Belajar Bahasa Isyarat",
+                text = "Teman Kamu Belajar Bahasa Isyarat",
                 fontSize = 16.sp,
                 color = Color.White.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center,

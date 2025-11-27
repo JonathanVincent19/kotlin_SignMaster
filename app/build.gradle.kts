@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.google.services)
 }
 
 android {
@@ -19,8 +20,14 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Build Flag: Set to false to test login, true to skip login during development
+            buildConfigField("Boolean", "SKIP_LOGIN", "false")
+        }
         release {
             isMinifyEnabled = false
+            // In release, always require login
+            buildConfigField("Boolean", "SKIP_LOGIN", "false")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -36,6 +43,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     
     packaging {
@@ -78,6 +86,18 @@ dependencies {
     // TensorFlow Lite (untuk model classifier)
     implementation("org.tensorflow:tensorflow-lite:2.14.0")
     implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
+    
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    
+    // Credential Manager for Google Sign-In (new recommended API)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services)
+    implementation(libs.googleid)
+    
+    // Legacy Google Sign-In (more stable on emulators)
+    implementation(libs.play.services.auth)
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -1,6 +1,8 @@
 package com.example.finpro_mobapp.quiz
 
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
+import com.example.finpro_mobapp.StatisticsManager
 
 /**
  * container pengelola navigasi quiz 2
@@ -16,6 +18,9 @@ fun Quiz2Container(
     onBackToQuizSelection: () -> Unit,
     onBackToHome: () -> Unit
 ) {
+    val context = LocalContext.current
+    val statisticsManager = remember { StatisticsManager(context) }
+    
     var currentScreen by remember { mutableStateOf(Quiz2Screen.LEVEL_SELECTION) }
     var selectedLevel by remember { mutableStateOf(1) }
     var gameQuestions by remember { mutableStateOf<List<Quiz2Question>>(emptyList()) }
@@ -48,6 +53,11 @@ fun Quiz2Container(
         }
         
         Quiz2Screen.FINAL -> {
+            // Update streak saat quiz selesai
+            LaunchedEffect(Unit) {
+                statisticsManager.updateStreak()
+            }
+            
             Quiz2FinalScreen(
                 level = selectedLevel,
                 completedQuestions = completeQuestionsCount,
