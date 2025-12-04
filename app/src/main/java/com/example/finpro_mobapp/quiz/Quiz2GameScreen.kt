@@ -213,7 +213,18 @@ fun Quiz2GameScreen(
                                             )
                                         )
                                         completedQuestions++
-                                        gameState = Quiz2GameState.FEEDBACK_CORRECT
+                                        
+                                        // Untuk level 2 & 3, langsung pindah ke soal berikutnya
+                                        // tanpa menampilkan FeedbackCorrectScreen lagi
+                                        // (karena SuccessAnimationOverlay sudah menampilkan "YEY")
+                                        if (currentQuestionIndex < questions.size - 1) {
+                                            currentQuestionIndex++
+                                            recognizedGesture = null
+                                            confidence = 0f
+                                            gameState = Quiz2GameState.SHOWING_TARGET
+                                        } else {
+                                            gameState = Quiz2GameState.COMPLETED
+                                        }
                                     }
                                 }
                             )

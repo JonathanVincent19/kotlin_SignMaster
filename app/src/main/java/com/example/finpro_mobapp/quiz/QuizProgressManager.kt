@@ -147,6 +147,57 @@ class QuizProgressManager(context: Context) {
     fun resetAllProgress() {
         prefs.edit().clear().apply()
     }
+    
+    /**
+     * Testing helper - Set unlock all levels
+     * @param unlockAll true = unlock semua level, false = lock semua (kecuali 1.1)
+     * 
+     * Example:
+     * ```
+     * progressManager.setTestingMode(true)  // Unlock all
+     * progressManager.setTestingMode(false) // Lock all (reset)
+     * ```
+     */
+    fun setTestingMode(unlockAll: Boolean) {
+        if (unlockAll) {
+            // Map jumlah soal yang benar untuk setiap sub-level
+            val questionsPerSubLevel = mapOf(
+                "1.1" to 10, "1.2" to 12, "1.3" to 15,
+                "2.1" to 8,  "2.2" to 10, "2.3" to 12,
+                "3.1" to 6,  "3.2" to 8,  "3.3" to 10
+            )
+            
+            // Unlock ALL sub-levels dan set completed dengan jumlah soal yang benar
+            prefs.edit().apply {
+                questionsPerSubLevel.forEach { (subLevelId, totalQuestions) ->
+                    putBoolean("${subLevelId}_unlocked", true)
+                    putInt("${subLevelId}_completed", totalQuestions)
+                    putInt("${subLevelId}_total", totalQuestions)
+                    putBoolean("${subLevelId}_isCompleted", true)
+                }
+                
+                // CRITICAL: Force unlock main levels 2 dan 3
+                // Karena system check previousLevel.status == COMPLETED
+                // Kita perlu pastikan semua sub-level dari level 1 & 2 sudah completed
+                // Ini akan trigger LevelData.updateLevelStatus() untuk set main level sebagai COMPLETED
+                
+                // Set flag khusus untuk testing mode (untuk bypass logic di Container)
+                putBoolean("testing_mode_active", true)
+                
+                apply()
+            }
+        } else {
+            // Reset all progress
+            resetAllProgress()
+        }
+    }
+    
+    /**
+     * Check if testing mode is active
+     */
+    fun isTestingModeActive(): Boolean {
+        return prefs.getBoolean("testing_mode_active", false)
+    }
 }
 
 /**

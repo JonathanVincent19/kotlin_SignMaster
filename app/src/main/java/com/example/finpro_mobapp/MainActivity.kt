@@ -19,6 +19,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.finpro_mobapp.auth.AuthManager
+import com.example.finpro_mobapp.quiz.QuizProgressManager
+import com.example.finpro_mobapp.quiz.Quiz2ProgressManager
 import com.example.finpro_mobapp.ui.theme.FINPRO_MOBAPPTheme
 import kotlinx.coroutines.launch
 
@@ -59,6 +61,21 @@ fun MainApp(authManager: AuthManager) {
     
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    
+    // 🧪 TESTING MODE - AKTIF untuk presentasi
+    // Ganti true ke false untuk lock semua level lagi
+    LaunchedEffect(Unit) {
+        val quiz1Progress = QuizProgressManager(context)
+        val quiz2Progress = Quiz2ProgressManager(context)
+        
+        // Reset dulu biar bersih, baru unlock all
+        quiz1Progress.resetAllProgress()
+        quiz2Progress.resetAllProgress()
+        
+        // Sekarang unlock semua
+        quiz1Progress.setTestingMode(false)   // true = unlock all
+        quiz2Progress.setTestingMode(false)   // true = unlock all
+    }
     
     // Activity Result Launcher for Google Sign-In
     val signInLauncher = rememberLauncherForActivityResult(

@@ -43,7 +43,9 @@ fun Quiz1Container(
                 levels = levels,
                 onBackClick = onBackToQuizSelection,
                 onLevelClick = { level ->
-                    if (level.isUnlocked) {
+                    // Bypass lock check jika testing mode aktif
+                    val isTestingMode = progressManager.isTestingModeActive()
+                    if (level.isUnlocked || isTestingMode) {
                         selectedLevel = level
                         currentScreen = Quiz1Screen.SUB_LEVEL_SELECTION
                     }
@@ -182,6 +184,7 @@ fun Quiz1Container(
  */
 private fun loadLevelsWithProgress(progressManager: QuizProgressManager): List<MainLevel> {
     val levels = LevelData.getInitialLevels()
+    val isTestingMode = progressManager.isTestingModeActive()
     
     levels.forEach { level ->
         level.subLevels.forEach { subLevel ->
@@ -205,13 +208,18 @@ private fun loadLevelsWithProgress(progressManager: QuizProgressManager): List<M
         // Update main level status
         LevelData.updateLevelStatus(level)
         
-        // Check if level should be unlocked
-        if (level.id > 1) {
-            val previousLevel = levels.find { it.id == level.id - 1 }
-            if (previousLevel?.status == LevelStatus.COMPLETED) {
-                level.isUnlocked = true
-                level.status = if (level.subLevels.any { it.status != SubLevelStatus.LOCKED }) 
-                    LevelStatus.ON_PROGRESS else LevelStatus.ON_PROGRESS
+        // Testing mode: Force unlock semua level
+        if (isTestingMode) {
+            level.isUnlocked = true
+        } else {
+            // Normal mode: Check if level should be unlocked
+            if (level.id > 1) {
+                val previousLevel = levels.find { it.id == level.id - 1 }
+                if (previousLevel?.status == LevelStatus.COMPLETED) {
+                    level.isUnlocked = true
+                    level.status = if (level.subLevels.any { it.status != SubLevelStatus.LOCKED }) 
+                        LevelStatus.ON_PROGRESS else LevelStatus.ON_PROGRESS
+                }
             }
         }
     }
