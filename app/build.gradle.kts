@@ -66,6 +66,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation("androidx.compose.material:material-icons-extended")
     
     // CameraX for Quiz 2 - Updated to support 16KB page size
     // Removed camera-extensions to fix 16KB alignment warning (not used in Quiz2)
@@ -86,6 +87,7 @@ dependencies {
     // TensorFlow Lite (untuk model classifier)
     implementation("org.tensorflow:tensorflow-lite:2.14.0")
     implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
+    implementation("io.coil-kt:coil-compose:2.6.0")
     
     // Firebase
     implementation(platform(libs.firebase.bom))

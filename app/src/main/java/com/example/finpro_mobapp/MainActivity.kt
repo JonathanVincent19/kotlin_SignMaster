@@ -7,17 +7,59 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.NavigationDrawerItemDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.finpro_mobapp.auth.AuthManager
 import com.example.finpro_mobapp.quiz.QuizProgressManager
 import com.example.finpro_mobapp.quiz.Quiz2ProgressManager
@@ -58,24 +100,26 @@ fun MainApp(authManager: AuthManager) {
     
     // Get username for HomeScreen
     var userName by remember { mutableStateOf("Pengguna") }
+    var userPhotoUrl by remember { mutableStateOf<String?>(null) }
     
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     
-    // 🧪 TESTING MODE - AKTIF untuk presentasi
-    // Ganti true ke false untuk lock semua level lagi
-    LaunchedEffect(Unit) {
-        val quiz1Progress = QuizProgressManager(context)
-        val quiz2Progress = Quiz2ProgressManager(context)
-        
-        // Reset dulu biar bersih, baru unlock all
-        quiz1Progress.resetAllProgress()
-        quiz2Progress.resetAllProgress()
-        
-        // Sekarang unlock semua
-        quiz1Progress.setTestingMode(false)   // true = unlock all
-        quiz2Progress.setTestingMode(false)   // true = unlock all
-    }
+    // 🧪 TESTING MODE -
+    // Hapus atau komentari bagian ini jika ingin progress tersimpan
+    // Jika perlu reset progress, panggil manual dari kode lain
+     LaunchedEffect(Unit) {
+         val quiz1Progress = QuizProgressManager(context)
+         val quiz2Progress = Quiz2ProgressManager(context)
+
+         // Reset dulu biar bersih, baru unlock all
+         quiz1Progress.resetAllProgress()
+         quiz2Progress.resetAllProgress()
+
+         // Sekarang unlock semua
+         quiz1Progress.setTestingMode(true)   // true = unlock all
+         quiz2Progress.setTestingMode(true)   // true = unlock all
+     }
     
     // Activity Result Launcher for Google Sign-In
     val signInLauncher = rememberLauncherForActivityResult(
@@ -88,6 +132,8 @@ fun MainApp(authManager: AuthManager) {
             
             signInResult.onSuccess { user ->
                 userName = user.displayName ?: "Pengguna"
+                userPhotoUrl = user.photoUrl?.toString()
+                android.util.Log.d("Auth", "photoUrl after login: ${user.photoUrl}")
                 Toast.makeText(context, "Selamat datang, $userName!", Toast.LENGTH_SHORT).show()
                 currentScreen = AppScreen.MAIN
                 errorMessage = null
@@ -111,6 +157,8 @@ fun MainApp(authManager: AuthManager) {
         // Check if user is already signed in
         if (authManager.isSignedIn) {
             userName = authManager.displayName
+            userPhotoUrl = authManager.photoUrl
+            android.util.Log.d("Auth", "photoUrl from cached session: ${authManager.photoUrl}")
             currentScreen = AppScreen.MAIN
         } else {
             currentScreen = AppScreen.LOGIN
@@ -141,9 +189,11 @@ fun MainApp(authManager: AuthManager) {
         AppScreen.MAIN -> {
             AppNavigation(
                 userName = userName,
+                userPhotoUrl = userPhotoUrl,
                 onLogout = {
                     authManager.signOut()
                     userName = "Pengguna"
+                    userPhotoUrl = null
                     currentScreen = AppScreen.LOGIN
                 }
             )
@@ -160,6 +210,7 @@ enum class Screen {
 @Composable
 fun AppNavigation(
     userName: String = "Pengguna",
+    userPhotoUrl: String? = null,
     onLogout: () -> Unit = {}
 ) {
     var currentScreen by remember { mutableStateOf(Screen.HOME) }
@@ -220,85 +271,56 @@ fun AppNavigation(
         )
     }
 
+    data class NavItem(val label: String, val screen: Screen, val icon: androidx.compose.ui.graphics.vector.ImageVector)
+
+    val navItems = listOf(
+        NavItem("Beranda", Screen.HOME, Icons.Filled.Home),
+        NavItem("Alfabet", Screen.DICTIONARY, Icons.Filled.MenuBook),
+        NavItem("Latihan", Screen.QUIZ, Icons.Filled.EmojiEvents)
+    )
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet(
                 drawerContainerColor = Color(0xFF4A90E2)
             ) {
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Beranda
-                NavigationDrawerItem(
-                    icon = { Text("🏠", fontSize = 24.sp) },
-                    label = { 
-                        Text(
-                            "Beranda", 
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium
-                        ) 
-                    },
-                    selected = currentScreen == Screen.HOME,
-                    onClick = {
-                        currentScreen = Screen.HOME
-                        scope.launch { drawerState.close() }
-                    },
-                    colors = NavigationDrawerItemDefaults.colors(
-                        selectedContainerColor = Color.White.copy(alpha = 0.2f),
-                        unselectedContainerColor = Color.Transparent
+                DrawerHeader(userName = userName, userPhotoUrl = userPhotoUrl)
+
+                navItems.forEach { item ->
+                    NavigationDrawerItem(
+                        icon = {
+                            Icon(
+                                imageVector = item.icon,
+                                contentDescription = item.label,
+                                tint = if (currentScreen == item.screen) Color(0xFF0F172A) else Color.White
+                            )
+                        },
+                        label = {
+                            Text(
+                                item.label,
+                                color = if (currentScreen == item.screen) Color(0xFF0F172A) else Color.White,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        },
+                        selected = currentScreen == item.screen,
+                        onClick = {
+                            currentScreen = item.screen
+                            scope.launch { drawerState.close() }
+                        },
+                        colors = NavigationDrawerItemDefaults.colors(
+                            selectedContainerColor = Color.White.copy(alpha = 0.2f),
+                            unselectedContainerColor = Color.Transparent
+                        )
                     )
-                )
-                
-                // Alfabet
-                NavigationDrawerItem(
-                    icon = { Text("Aa", fontSize = 24.sp, color = Color.White, fontWeight = FontWeight.Bold) },
-                    label = { 
-                        Text(
-                            "Alfabet", 
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium
-                        ) 
-                    },
-                    selected = currentScreen == Screen.DICTIONARY,
-                    onClick = {
-                        currentScreen = Screen.DICTIONARY
-                        scope.launch { drawerState.close() }
-                    },
-                    colors = NavigationDrawerItemDefaults.colors(
-                        selectedContainerColor = Color.White.copy(alpha = 0.2f),
-                        unselectedContainerColor = Color.Transparent
-                    )
-                )
-                
-                // Latihan (Quiz)
-                NavigationDrawerItem(
-                    icon = { Text("📚", fontSize = 24.sp) },
-                    label = { 
-                        Text(
-                            "Latihan", 
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium
-                        ) 
-                    },
-                    selected = currentScreen == Screen.QUIZ,
-                    onClick = {
-                        currentScreen = Screen.QUIZ
-                        scope.launch { drawerState.close() }
-                    },
-                    colors = NavigationDrawerItemDefaults.colors(
-                        selectedContainerColor = Color.White.copy(alpha = 0.2f),
-                        unselectedContainerColor = Color.Transparent
-                    )
-                )
+                }
                 
                 Spacer(modifier = Modifier.weight(1f))
                 
                 // Logout button
                 NavigationDrawerItem(
-                    icon = { Text("🚪", fontSize = 24.sp) },
+                    icon = { Icon(Icons.Filled.ExitToApp, contentDescription = "Keluar", tint = Color.White) },
                     label = { 
                         Text(
                             "Keluar", 
@@ -336,6 +358,70 @@ fun AppNavigation(
                 onMenuClick = { scope.launch { drawerState.open() } },
                 onBackToHome = { currentScreen = Screen.HOME }
             )
+        }
+    }
+}
+
+@Composable
+private fun DrawerHeader(userName: String, userPhotoUrl: String?) {
+    val firstName = userName.split(" ").firstOrNull().orEmpty().ifEmpty { "Pengguna" }
+    val initials = firstName.take(2).uppercase()
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(Color(0xFFEEF4FF), Color(0xFFDCEBFF))
+                    ),
+                    shape = RoundedCornerShape(20.dp)
+                )
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .background(color = Color.White, shape = RoundedCornerShape(16.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                if (!userPhotoUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = userPhotoUrl,
+                        contentDescription = "Profile Photo",
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(RoundedCornerShape(16.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Text(
+                        text = initials,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = Color(0xFF1D4ED8)
+                    )
+                }
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = "Halo, $firstName",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = Color(0xFF0F172A)
+                )
+                Text(
+                    text = "Ayo lanjut belajar hari ini",
+                    fontSize = 14.sp,
+                    color = Color(0xFF334155)
+                )
+            }
         }
     }
 }

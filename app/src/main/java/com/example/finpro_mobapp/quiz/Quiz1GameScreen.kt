@@ -265,29 +265,12 @@ private fun DisplayingSequenceScreen(
             ) {
                 val currentImageId = question.imageSequence.getOrNull(currentLetterIndex)
                 if (currentImageId != null) {
-                    // TODO: Uncomment when real images available
-                    // Image(
-                    //     painter = painterResource(id = currentImageId),
-                    //     contentDescription = "Letter ${question.letters[currentLetterIndex]}",
-                    //     modifier = Modifier.fillMaxSize(),
-                    //     contentScale = ContentScale.Crop
-                    // )
-                    
-                    // Placeholder
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "📷",
-                            fontSize = 80.sp
-                        )
-                        Text(
-                            text = "Huruf ${question.letters[currentLetterIndex]}",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF2C3E50)
-                        )
-                    }
+                    Image(
+                        painter = painterResource(id = currentImageId),
+                        contentDescription = "Letter ${question.letters[currentLetterIndex]}",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
                 }
             }
         }

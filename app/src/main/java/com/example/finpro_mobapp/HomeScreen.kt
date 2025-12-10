@@ -150,15 +150,15 @@ fun HomeScreen(
             ) {
                 Text(
                     text = "👋 Hai $firstName!",
-                    fontSize = 26.sp,
+                    fontSize = 21.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF2C3E50)
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = " Sudahkan kamu belajar hari ini?",
 
-                    fontSize = 18.sp,
+                    fontSize = 14.sp,
                     color = Color(0xFF7F8C8D)
                 )
             }
@@ -166,7 +166,7 @@ fun HomeScreen(
             // Main Banner
             HeroBanner(onNavigateToDictionary = onNavigateToDictionary)
             
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(20.dp))
             
             // Akses Cepat Section
             Text(
@@ -196,12 +196,12 @@ fun HomeScreen(
                 )
             }
             
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(20.dp))
             
             // Statistics Section
             StatisticsSection(context = LocalContext.current)
             
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(20.dp))
             
             // Daily Tip Section
             DailyTipSection()
@@ -221,7 +221,7 @@ fun HeroBanner(onNavigateToDictionary: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(210.dp),
+            .height(130.dp),
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 9.dp)
     ) {
@@ -250,10 +250,11 @@ fun HeroBanner(onNavigateToDictionary: () -> Unit) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 32.dp, vertical = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .padding(horizontal = 18.dp, vertical = 14.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                // Text Section - sedikit naik
+                // Text Section
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.fillMaxWidth()
@@ -264,51 +265,37 @@ fun HeroBanner(onNavigateToDictionary: () -> Unit) {
                     ) {
                         Text(
                             text = "🎯",
-                            fontSize = 26.sp
+                            fontSize = 20.sp
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "Belajar Bahasa Isyarat Indonesia (BISINDO)",
-                            fontSize = 19.sp,
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.Medium,
                             color = Color.White.copy(alpha = 0.95f),
                             textAlign = TextAlign.Start
                         )
                     }
                     
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     
                     // Text ke-2 di tengah
                     Text(
-                        text = "2.500.000+ tunarungu di Indonesia. Mereka juga ingin didengar!",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.ExtraBold,
+                        text = "2.500.000+ tunarungu di Indonesia. ",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
                         color = Color.White,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )
-                }
-                
-                // Spacer untuk simetris - mendorong tombol ke bawah
-                Spacer(modifier = Modifier.weight(1f))
-                
-                // Button Section - di bawah
-                Button(
-                    onClick = onNavigateToDictionary,
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(14.dp),
-                    contentPadding = PaddingValues(vertical = 8.dp),
-                ) {
+
                     Text(
-                        text = "Mulai Belajar",
-                        color = Color(0xFF4A90E2),
+                        text = "Mereka juga ingin didengar!",
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        textAlign = TextAlign.Center
+                        color = Color.White,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
@@ -411,45 +398,6 @@ fun StatisticsSection(context: android.content.Context) {
                     .fillMaxWidth()
                     .padding(20.dp)
             ) {
-                // Level Section
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Text(
-                        text = "📊",
-                        fontSize = 24.sp,
-                        modifier = Modifier.padding(end = 12.dp)
-                    )
-                    
-                    Column {
-                        Text(
-                            text = "Level Sekarang",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF2C3E50)
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Coming Soon",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF4A90E2)
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Fitur level akan tersedia saat quiz sudah siap!",
-                            fontSize = 13.sp,
-                            color = Color(0xFF7F8C8D),
-                            lineHeight = 18.sp
-                        )
-                    }
-                }
-                
-                Divider(
-                    modifier = Modifier.padding(vertical = 16.dp),
-                    color = Color(0xFFE0E0E0)
-                )
                 
                 // Streak Section
                 Row(

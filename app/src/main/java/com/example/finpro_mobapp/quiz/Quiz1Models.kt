@@ -86,14 +86,34 @@ data class Question(
         }
     
     private fun getImageResIdForLetter(letter: Char): Int {
-        // TODO: Nanti ganti dengan gambar asli
-        // Untuk sekarang pakai placeholder
         return when(letter.uppercaseChar()) {
-            // Saat gambar sudah ada, uncomment ini:
-            // 'A' -> R.drawable.bisindo_a
-            // 'B' -> R.drawable.bisindo_b
-            // ... dst sampai Z
-            else -> R.drawable.ic_launcher_foreground // Placeholder
+            'A' -> R.drawable.bisindo_a
+            'B' -> R.drawable.bisindo_b
+            'C' -> R.drawable.bisindo_c
+            'D' -> R.drawable.bisindo_d
+            'E' -> R.drawable.bisindo_e
+            'F' -> R.drawable.bisindo_f
+            'G' -> R.drawable.bisindo_g
+            'H' -> R.drawable.bisindo_h
+            'I' -> R.drawable.bisindo_i
+            'J' -> R.drawable.bisindo_j
+            'K' -> R.drawable.bisindo_k
+            'L' -> R.drawable.bisindo_l
+            'M' -> R.drawable.bisindo_m
+            'N' -> R.drawable.bisindo_n
+            'O' -> R.drawable.bisindo_o
+            'P' -> R.drawable.bisindo_p
+            'Q' -> R.drawable.bisindo_q
+            'R' -> R.drawable.bisindo_r
+            'S' -> R.drawable.bisindo_s
+            'T' -> R.drawable.bisindo_t
+            'U' -> R.drawable.bisindo_u
+            'V' -> R.drawable.bisindo_v
+            'W' -> R.drawable.bisindo_w
+            'X' -> R.drawable.bisindo_x
+            'Y' -> R.drawable.bisindo_y
+            'Z' -> R.drawable.bisindo_z
+            else -> R.drawable.ic_launcher_foreground // Fallback untuk karakter non-huruf
         }
     }
 }
