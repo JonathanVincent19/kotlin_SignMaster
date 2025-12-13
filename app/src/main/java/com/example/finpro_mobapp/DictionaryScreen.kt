@@ -63,133 +63,133 @@ fun DictionaryScreen(
         listOf(
             AlphabetLetter(
                 letter = "A",
-                description = "Kedua jari telunjuk dan jempol bersentuhan membentuk segitiga.",
-                imageResId = R.drawable.bisindo_a  // Ganti dengan R.drawable.bisindo_a
+                description = "Bentuk segitiga dengan ujung jari telunjuk dan jempol saling menyentuh, membentuk huruf A yang elegan.",
+                imageResId = R.drawable.bisindo_a
             ),
             AlphabetLetter(
                 letter = "B",
-                description = "Tangan terbuka dengan semua jari rapat dan ibu jari di samping telapak tangan.",
-                imageResId = R.drawable.bisindo_b  // Ganti dengan R.drawable.bisindo_b
+                description = "Telapak tangan terbuka lebar dengan kelima jari rapat dan lurus, sementara ibu jari dilipat ke samping menempel pada telapak tangan.",
+                imageResId = R.drawable.bisindo_b
             ),
             AlphabetLetter(
                 letter = "C",
-                description = "Tangan membentuk lengkungan seperti huruf C dengan jari-jari melengkung.",
-                imageResId = R.drawable.bisindo_c  // Ganti dengan R.drawable.bisindo_c
+                description = "Jari-jari melengkung membentuk setengah lingkaran yang menyerupai bentuk huruf C, dengan telapak tangan menghadap ke depan.",
+                imageResId = R.drawable.bisindo_c
             ),
             AlphabetLetter(
                 letter = "D",
-                description = "Jari telunjuk tegak lurus ke atas, jari-jari lain menekuk dengan ibu jari menyentuh jari tengah.",
-                imageResId = R.drawable.bisindo_d  // Ganti dengan R.drawable.bisindo_d
+                description = "Jari telunjuk berdiri tegak ke atas seperti menunjuk langit, sementara jari lainnya menekuk dengan ibu jari menempel pada jari tengah.",
+                imageResId = R.drawable.bisindo_d
             ),
             AlphabetLetter(
                 letter = "E",
-                description = "Semua jari menekuk ke dalam seperti cakar dengan ujung jari menyentuh telapak tangan.",
-                imageResId = R.drawable.bisindo_e  // Ganti dengan R.drawable.bisindo_e
+                description = "Semua jari ditekuk ke dalam menyerupai cakar, dengan ujung-ujung jari menyentuh bagian tengah telapak tangan membentuk kepalan yang rapat.",
+                imageResId = R.drawable.bisindo_e
             ),
             AlphabetLetter(
                 letter = "F",
-                description = "Jari telunjuk dan ibu jari saling bersentuhan membentuk lingkaran, jari lainnya tegak.",
-                imageResId = R.drawable.bisindo_f  // Ganti dengan R.drawable.bisindo_f
+                description = "Jari telunjuk dan ibu jari saling bertemu membentuk lingkaran sempurna, sementara tiga jari lainnya (tengah, manis, kelingking) berdiri tegak dan rapat.",
+                imageResId = R.drawable.bisindo_f
             ),
             AlphabetLetter(
                 letter = "G",
-                description = "Jari telunjuk dan ibu jari membentang horizontal seperti menunjuk ke samping.",
-                imageResId = R.drawable.bisindo_g  // Ganti dengan R.drawable.bisindo_g
+                description = "Jari telunjuk dan ibu jari direntangkan ke samping secara horizontal, membentuk garis lurus seperti sedang menunjuk ke kiri dan kanan secara bersamaan.",
+                imageResId = R.drawable.bisindo_g
             ),
             AlphabetLetter(
                 letter = "H",
-                description = "Jari telunjuk dan jari tengah membentang horizontal berdampingan.",
-                imageResId = R.drawable.bisindo_h  // Ganti dengan R.drawable.bisindo_h
+                description = "Jari telunjuk dan jari tengah direntangkan ke samping secara horizontal dan sejajar, menciptakan bentuk seperti dua batang yang berdampingan.",
+                imageResId = R.drawable.bisindo_h
             ),
             AlphabetLetter(
                 letter = "I",
-                description = "Kelingking tegak lurus ke atas, jari-jari lain menekuk dengan ibu jari di atas jari tengah.",
-                imageResId = R.drawable.bisindo_i  // Ganti dengan R.drawable.bisindo_i
+                description = "Hanya kelingking yang berdiri tegak ke atas, sementara jari-jari lainnya menekuk dengan ibu jari diletakkan di atas jari tengah seperti sedang memegang sesuatu.",
+                imageResId = R.drawable.bisindo_i
             ),
             AlphabetLetter(
                 letter = "J",
-                description = "Kelingking tegak lurus kemudian bergerak membentuk huruf J di udara.",
-                imageResId = R.drawable.bisindo_j  // Ganti dengan R.drawable.bisindo_j
+                description = "Dimulai dengan kelingking yang berdiri tegak, kemudian tangan bergerak membentuk lengkungan ke bawah dan ke kanan, menelusuri bentuk huruf J di udara.",
+                imageResId = R.drawable.bisindo_j
             ),
             AlphabetLetter(
                 letter = "K",
-                description = "Jari telunjuk tegak, jari tengah menyentuh ibu jari, jari lainnya menekuk.",
-                imageResId = R.drawable.bisindo_k  // Ganti dengan R.drawable.bisindo_k
+                description = "Jari telunjuk berdiri tegak seperti tiang, sementara jari tengah ditekuk menyentuh bagian dalam ibu jari, dan jari lainnya menekuk rapat.",
+                imageResId = R.drawable.bisindo_k
             ),
             AlphabetLetter(
                 letter = "L",
-                description = "Jari telunjuk dan ibu jari membentuk huruf L dengan sudut 90 derajat.",
-                imageResId = R.drawable.bisindo_l // Ganti dengan R.drawable.bisindo_l
+                description = "Jari telunjuk dan ibu jari membentuk sudut siku-siku 90 derajat, menciptakan bentuk L yang jelas dengan telunjuk ke atas dan ibu jari ke samping.",
+                imageResId = R.drawable.bisindo_l
             ),
             AlphabetLetter(
                 letter = "M",
-                description = "Tiga jari pertama (telunjuk, tengah, manis) diletakkan di atas ibu jari.",
-                imageResId = R.drawable.bisindo_m  // Ganti dengan R.drawable.bisindo_m
+                description = "Tiga jari terdepan (telunjuk, tengah, dan manis) ditekuk dan diletakkan di atas permukaan ibu jari, membentuk pola seperti tiga puncak gunung.",
+                imageResId = R.drawable.bisindo_m
             ),
             AlphabetLetter(
                 letter = "N",
-                description = "Dua jari pertama (telunjuk dan tengah) diletakkan di atas ibu jari.",
-                imageResId = R.drawable.bisindo_n  // Ganti dengan R.drawable.bisindo_n
+                description = "Dua jari terdepan (telunjuk dan tengah) ditekuk dan diletakkan di atas ibu jari, menciptakan bentuk seperti dua puncak yang lebih sederhana dari huruf M.",
+                imageResId = R.drawable.bisindo_n
             ),
             AlphabetLetter(
                 letter = "O",
-                description = "Semua ujung jari bertemu membentuk lingkaran seperti huruf O.",
-                imageResId = R.drawable.bisindo_o  // Ganti dengan R.drawable.bisindo_o
+                description = "Semua ujung jari dari kedua tangan atau satu tangan saling bertemu membentuk lingkaran sempurna, menyerupai bentuk bulat huruf O yang utuh.",
+                imageResId = R.drawable.bisindo_o
             ),
             AlphabetLetter(
                 letter = "P",
-                description = "Seperti K tetapi tangan mengarah ke bawah dengan jari telunjuk dan tengah membentang.",
-                imageResId = R.drawable.bisindo_p  // Ganti dengan R.drawable.bisindo_p
+                description = "Mirip dengan huruf K namun posisi tangan menghadap ke bawah, dengan jari telunjuk dan tengah direntangkan ke bawah membentuk garis vertikal.",
+                imageResId = R.drawable.bisindo_p
             ),
             AlphabetLetter(
                 letter = "Q",
-                description = "Jari telunjuk dan ibu jari mengarah ke bawah dengan jari lainnya menekuk.",
-                imageResId = R.drawable.bisindo_q  // Ganti dengan R.drawable.bisindo_q
+                description = "Jari telunjuk dan ibu jari direntangkan ke bawah membentuk sudut, sementara jari lainnya menekuk ke dalam, menciptakan bentuk seperti kait yang mengarah ke bawah.",
+                imageResId = R.drawable.bisindo_q
             ),
             AlphabetLetter(
                 letter = "R",
-                description = "Jari telunjuk dan jari tengah menyilang dengan jari telunjuk di atas.",
-                imageResId = R.drawable.bisindo_r  // Ganti dengan R.drawable.bisindo_r
+                description = "Jari telunjuk dan jari tengah saling menyilang dengan jari telunjuk berada di atas jari tengah, membentuk pola silang yang khas seperti huruf R.",
+                imageResId = R.drawable.bisindo_r
             ),
             AlphabetLetter(
                 letter = "S",
-                description = "Tangan mengepal dengan ibu jari berada di depan jari-jari yang menekuk.",
-                imageResId = R.drawable.bisindo_s  // Ganti dengan R.drawable.bisindo_s
+                description = "Tangan mengepal rapat dengan semua jari menekuk ke dalam, sementara ibu jari diletakkan di depan menutupi jari-jari yang menekuk, seperti kepalan tinju yang rapat.",
+                imageResId = R.drawable.bisindo_s
             ),
             AlphabetLetter(
                 letter = "T",
-                description = "Ibu jari dijepit di antara jari telunjuk dan jari tengah.",
-                imageResId = R.drawable.bisindo_t  // Ganti dengan R.drawable.bisindo_t
+                description = "Ibu jari dijepit dengan rapat di antara jari telunjuk dan jari tengah, menciptakan bentuk seperti huruf T dengan garis horizontal dan vertikal.",
+                imageResId = R.drawable.bisindo_t
             ),
             AlphabetLetter(
                 letter = "U",
-                description = "Jari telunjuk dan jari tengah tegak lurus ke atas, rapat berdampingan.",
-                imageResId = R.drawable.bisindo_u  // Ganti dengan R.drawable.bisindo_u
+                description = "Jari telunjuk dan jari tengah berdiri tegak ke atas dan rapat berdampingan seperti dua batang yang sejajar, sementara jari lainnya menekuk.",
+                imageResId = R.drawable.bisindo_u
             ),
             AlphabetLetter(
                 letter = "V",
-                description = "Jari telunjuk dan jari tengah tegak membentuk huruf V dengan jari terpisah.",
-                imageResId = R.drawable.bisindo_v  // Ganti dengan R.drawable.bisindo_v
+                description = "Jari telunjuk dan jari tengah berdiri tegak membentuk sudut seperti huruf V, dengan kedua jari terpisah membentuk bentuk kemenangan yang klasik.",
+                imageResId = R.drawable.bisindo_v
             ),
             AlphabetLetter(
                 letter = "W",
-                description = "Tiga jari (telunjuk, tengah, manis) tegak membentuk huruf W dengan jari terpisah.",
-                imageResId = R.drawable.bisindo_w  // Ganti dengan R.drawable.bisindo_w
+                description = "Tiga jari (telunjuk, tengah, dan manis) berdiri tegak dengan jarak yang terpisah, menciptakan pola seperti tiga puncak yang membentuk huruf W.",
+                imageResId = R.drawable.bisindo_w
             ),
             AlphabetLetter(
                 letter = "X",
-                description = "Jari telunjuk menekuk seperti kait dengan ujung jari menghadap ke atas.",
-                imageResId = R.drawable.bisindo_x  // Ganti dengan R.drawable.bisindo_x
+                description = "Jari telunjuk ditekuk membentuk kait dengan ujung jari menghadap ke atas, menciptakan bentuk seperti huruf X dengan garis yang menyilang.",
+                imageResId = R.drawable.bisindo_x
             ),
             AlphabetLetter(
                 letter = "Y",
-                description = "Ibu jari dan kelingking tegak membentang, jari-jari lain menekuk.",
-                imageResId = R.drawable.bisindo_y  // Ganti dengan R.drawable.bisindo_y
+                description = "Ibu jari dan kelingking direntangkan ke samping membentuk garis horizontal, sementara tiga jari tengah menekuk ke dalam, seperti bentuk Y yang unik.",
+                imageResId = R.drawable.bisindo_y
             ),
             AlphabetLetter(
                 letter = "Z",
-                description = "Jari telunjuk tegak kemudian bergerak membentuk zigzag seperti huruf Z di udara.",
-                imageResId = R.drawable.bisindo_z  // Ganti dengan R.drawable.bisindo_z
+                description = "Jari telunjuk mulai dari posisi tegak, kemudian bergerak membentuk tiga garis yang saling terhubung: horizontal, diagonal, dan horizontal lagi, menelusuri bentuk zigzag huruf Z di udara.",
+                imageResId = R.drawable.bisindo_z
             )
         )
     }
@@ -252,6 +252,7 @@ fun DictionaryScreen(
                 ) {
                     Box(
                         modifier = Modifier
+                            .clip(RoundedCornerShape(18.dp))
                             .background(
                                 Brush.linearGradient(
                                     colors = listOf(primaryBlue, Color(0xFF6EC3FF))
